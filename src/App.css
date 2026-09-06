@@ -1,0 +1,375 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+body {
+  background-color: #f6f7fb !important; 
+  font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+:root {
+  --bs-primary: #863bff;
+  --bs-primary-rgb: 134, 59, 255;
+  --sidebar-width: 260px;
+  --bottom-nav-height: 75px;
+}
+
+/* --- KIẾN TRÚC LAYOUT MỚI (SIDEBAR & BOTTOM NAV) --- */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f6f7fb;
+}
+
+.main-content {
+  flex-grow: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  transition: margin 0.3s ease;
+}
+
+/* --- KIẾN TRÚC LAYOUT MỚI (MINI-SIDEBAR & BOTTOM NAV) --- */
+:root {
+  --bs-primary: #863bff;
+  --bs-primary-rgb: 134, 59, 255;
+  --sidebar-collapsed: 85px; /* Chiều rộng khi thu gọn (chỉ hiện icon) */
+  --sidebar-expanded: 260px; /* Chiều rộng khi hover */
+  --bottom-nav-height: 75px;
+}
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f6f7fb;
+}
+
+.main-content {
+  flex-grow: 1;
+  margin-left: var(--sidebar-collapsed); /* Chỉ chừa khoảng nhỏ cho icon bên trái */
+  min-height: 100vh;
+  /* Chú ý: Cố định margin, khi menu bung ra sẽ trượt "lên trên" màn hình chính */
+}
+
+/* Sidebar Desktop */
+.app-navigation {
+  width: var(--sidebar-collapsed);
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: var(--bs-primary);
+  color: white;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 15px; /* Căn chỉnh cho icon vào giữa */
+  box-shadow: 4px 0 20px rgba(0,0,0,0.05);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+  overflow-x: hidden;
+  white-space: nowrap;
+}
+
+/* Khi di chuột vào Menu */
+.app-navigation:hover {
+  width: var(--sidebar-expanded);
+  padding: 30px 20px;
+  box-shadow: 10px 0 30px rgba(0,0,0,0.15); /* Làm bóng đậm hơn để tạo cảm giác nổi */
+}
+
+/* Logic ẩn hiện Text trong Menu */
+.nav-text {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+}
+.progress-wrapper {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.app-navigation:hover .nav-text,
+.app-navigation:hover .progress-wrapper {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.1s;
+}
+
+/* Style nút bấm trong Menu */
+.nav-link-custom {
+  display: flex;
+  align-items: center;
+  padding: 14px 10px; /* Bo gọn khi bị thu nhỏ */
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 10px;
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+  min-width: 35px; /* Giữ icon cố định không bị xô lệch text */
+  text-align: center;
+}
+
+.app-navigation:hover .nav-link-custom {
+  padding: 14px 15px; /* Trả lại padding thoải mái khi mở rộng */
+}
+
+.nav-link-custom:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+.app-navigation:hover .nav-link-custom:hover {
+  transform: translateX(5px);
+}
+
+.nav-link-custom.active {
+  background-color: white;
+  color: var(--bs-primary) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* Bottom Nav Mobile (Giữ nguyên) */
+@media (max-width: 991px) {
+  .main-content {
+    margin-left: 0;
+    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+  }
+  .app-navigation {
+    width: 100%;
+    height: var(--bottom-nav-height);
+    top: auto;
+    bottom: 0;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -4px 25px rgba(0,0,0,0.15);
+    background-color: rgba(134, 59, 255, 0.98);
+    backdrop-filter: blur(10px);
+  }
+  .app-navigation:hover {
+    width: 100%;
+    padding: 0 10px;
+  }
+  .nav-link-custom, .app-navigation:hover .nav-link-custom {
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 0;
+    margin-bottom: 0;
+    border-radius: 16px;
+    width: 60px;
+    justify-content: center;
+    transform: none !important;
+  }
+  .nav-link-custom:hover { background-color: transparent; }
+  .nav-link-custom.active { background-color: rgba(255,255,255,0.2); color: white !important; box-shadow: none; }
+  .nav-text { opacity: 1; visibility: visible; display: none; } 
+  .mobile-label { font-size: 0.65rem; font-weight: 700; display: block; }
+}
+
+/* Bottom Nav Mobile */
+@media (max-width: 991px) {
+  .main-content {
+    margin-left: 0;
+    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+  }
+  
+  .app-navigation {
+    width: 100%;
+    height: var(--bottom-nav-height);
+    top: auto;
+    bottom: 0;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -4px 25px rgba(0,0,0,0.15);
+    background-color: rgba(134, 59, 255, 0.98);
+    backdrop-filter: blur(10px);
+  }
+
+  .nav-link-custom {
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 0;
+    margin-bottom: 0;
+    border-radius: 16px;
+    width: 60px;
+    justify-content: center;
+    transform: none !important;
+  }
+
+  .nav-link-custom:hover { background-color: transparent; }
+  .nav-link-custom.active { background-color: rgba(255,255,255,0.2); color: white !important; box-shadow: none; }
+  .nav-icon { font-size: 1.5rem; }
+  .mobile-label { font-size: 0.65rem; font-weight: 700; }
+}
+
+/* --- CARDS & BUTTONS --- */
+.card {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+.bg-primary { background-color: #863bff !important; }
+.text-primary { color: #863bff !important; }
+.border-primary { border-color: #863bff !important; }
+
+.btn { border-radius: 8px !important; font-weight: 600 !important; }
+.btn-primary { background-color: #863bff !important; border-color: #863bff !important; color: #ffffff !important; }
+.btn-primary:hover { background-color: #6b21e3 !important; }
+.btn-outline-primary { color: #863bff !important; border-color: #863bff !important; }
+.btn-outline-primary:hover { background-color: #863bff !important; color: #ffffff !important; }
+
+/* --- ANIMATIONS --- */
+.fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+.fade-in-slide { animation: fadeInSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInSlide { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+.shake { animation: shakeError 0.4s ease-in-out; }
+@keyframes shakeError {
+  0%, 100% { transform: translateX(0); }
+  25%, 75% { transform: translateX(-8px); }
+  50% { transform: translateX(8px); }
+}
+
+/* --- FLASHCARDS & MATCH --- */
+.flashcard-container {
+  perspective: 1000px; width: 100%; max-width: 450px; aspect-ratio: 1 / 1; margin: 0 auto; cursor: pointer;
+}
+.flashcard-inner {
+  position: relative; width: 100%; height: 100%;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); border-radius: 24px;
+}
+.flashcard-inner.flipped { transform: rotateY(180deg); }
+.flashcard-front, .flashcard-back {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(1.2rem, 5vw, 2.2rem); font-weight: bold; border-radius: 24px;
+  border: 2px solid #e7e7e9; padding: 30px; text-align: center; box-sizing: border-box;
+}
+.flashcard-front { background-color: #ffffff; color: #333; }
+.flashcard-back { background-color: #863bff; color: #ffffff; transform: rotateY(180deg); border-color: #863bff; }
+
+.match-card { min-height: 100px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; font-weight: 500; text-align: center; padding: 15px; }
+.match-card.selected { border: 3px solid #863bff !important; background-color: #f4ebff !important; }
+.match-card.correct { visibility: hidden; opacity: 0; transition: visibility 0s 0.3s, opacity 0.3s linear; }
+
+.text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* --- CSS RIÊNG CHO IN ẤN --- */
+@media print {
+  body { background-color: #fff !important; }
+  .app-navigation, .d-print-none, .btn { display: none !important; }
+  .main-content { margin-left: 0 !important; padding: 0 !important; }
+  .app-layout { background-color: white !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+  .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+  .print-no-shadow { box-shadow: none !important; border: none !important; }
+  .print-blank-line { border-bottom: 1px dashed #999; height: 30px; margin-top: 10px; width: 100%; }
+}
+
+/* --- SỬA LỖI GIAO DIỆN TÌM KIẾM & LỌC --- */
+.custom-select-fix {
+  padding-right: 2.5rem !important; /* Đẩy chữ tránh xa mũi tên */
+  background-position: right 1rem center !important; /* Căn chỉnh lại mũi tên thả xuống */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  text-align: center;
+  text-align-last: center; /* Ép chữ Select ra giữa */
+}
+
+/* Ẩn dấu trang trí mặc định của trình duyệt để dùng icon Bootstrap */
+.custom-select-fix::-ms-expand {
+  display: none;
+}
+
+/* --- STREAK & COMBO ANIMATIONS --- */
+.streak-indicator {
+  transition: border-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Hiệu ứng tỏa sáng lan tỏa khi chuỗi đạt mốc 5 (Đang bốc cháy) */
+.streak-glow {
+  animation: pulseGlow 1.5s infinite;
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); }
+  70% { box-shadow: 0 0 0 12px rgba(220, 53, 69, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+/* Thanh thời gian rút cạn đồng bộ đúng 2.5s (Khớp logic MatchMode) */
+.combo-timer-bar {
+  width: 100%;
+  animation: comboDrain 2.5s linear forwards;
+  transform-origin: left;
+}
+
+@keyframes comboDrain {
+  0% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+
+.hover-bg-danger:hover { background-color: #dc3545 !important; }
+.hover-text-white:hover { color: #ffffff !important; }
+
+
+/* --- PHẢN HỒI CHẠM (RIPPLE/SCALE) --- */
+.btn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+.btn:active {
+  transform: scale(0.96) !important;
+}
+
+/* --- THANH TIẾN ĐỘ SỐNG ĐỘNG (GLOWING PROGRESS BAR) --- */
+.progress-bar {
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+.progress-bar::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+  animation: progressGlow 2s infinite linear;
+}
+@keyframes progressGlow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* --- LƯỚT SÁNG CHO LOADING SKELETON (SHIMMER) --- */
+.placeholder {
+  background: linear-gradient(90deg, #e2e4e8 25%, #f0f2f5 50%, #e2e4e8 75%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmerLoading 1.5s infinite linear !important;
+  opacity: 1 !important;
+}
+@keyframes shimmerLoading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

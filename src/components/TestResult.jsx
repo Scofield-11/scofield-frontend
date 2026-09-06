@@ -1,0 +1,75 @@
+import React from 'react';
+
+function TestResult({ score, questions, onRestart, onCreateMistakeSet }) {
+  const percent = Math.round((score.correct / score.total) * 100);
+  const wrongCount = score.total - score.correct;
+  
+  // Xác định màu sắc theo phần trăm
+  const color = percent >= 80 ? 'var(--bs-success)' : percent >= 50 ? 'var(--bs-warning)' : 'var(--bs-danger)';
+
+  return (
+    <div className="container mt-5 print-container fade-in-slide" style={{ maxWidth: '800px' }}>
+      <div className="card shadow-lg border-0 p-5 mb-5 text-center rounded-4 print-no-shadow bg-white position-relative overflow-hidden">
+        <h3 className="fw-bold text-dark mb-5" style={{ zIndex: 2, position: 'relative' }}>Kết quả bài kiểm tra</h3>
+        
+        {/* Biểu đồ tròn CSS (Conic Gradient) */}
+        <div className="mx-auto mb-4 position-relative d-flex justify-content-center align-items-center" 
+             style={{ 
+               width: '180px', height: '180px', 
+               borderRadius: '50%', 
+               background: `conic-gradient(${color} ${percent}%, #f0f0f0 ${percent}% 100%)`,
+               boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+             }}>
+          <div className="bg-white rounded-circle d-flex flex-column justify-content-center align-items-center" 
+               style={{ width: '140px', height: '140px' }}>
+            <h1 className="fw-bold mb-0" style={{ color: color, fontSize: '3rem' }}>{percent}%</h1>
+          </div>
+        </div>
+
+        <p className="fs-5 fw-bold text-muted mb-5">Bạn trả lời đúng <strong>{score.correct} / {score.total}</strong> câu</p>
+        
+        <div className="d-flex flex-wrap justify-content-center gap-3 position-relative" style={{ zIndex: 2 }}>
+          <button className="btn btn-outline-primary px-4 py-3 fw-bold rounded-pill" onClick={onRestart}>
+            Làm bài test mới
+          </button>
+          {wrongCount > 0 && (
+            <button className="btn btn-warning px-4 py-3 fw-bold text-white rounded-pill shadow-sm" onClick={onCreateMistakeSet}>
+              ✨ Tạo bộ ôn tập từ {wrongCount} câu sai
+            </button>
+          )}
+          <button className="btn btn-light px-4 py-3 fw-bold rounded-pill border shadow-sm" onClick={() => window.print()}>
+            🖨️ In kết quả
+          </button>
+        </div>
+      </div>
+
+      <h4 className="mb-4 fw-bold">Chi tiết bài làm:</h4>
+      {questions.map((q, idx) => (
+        <div key={idx} className={`card mb-4 border-0 shadow-sm rounded-4 ${q.isCorrect ? 'bg-light' : 'bg-danger'}`} style={{ '--bs-bg-opacity': q.isCorrect ? 1 : 0.05, breakInside: 'avoid' }}>
+          <div className="card-body p-4 p-md-5">
+            <h5 className="card-title fw-bold mb-4" style={{ lineHeight: '1.5' }}>
+              <span className={`badge me-2 ${q.isCorrect ? 'bg-success' : 'bg-danger'}`}>{idx + 1}</span> 
+              {q.questionText}
+            </h5>
+            
+            <div className="p-3 rounded-3 bg-white border shadow-sm mb-3">
+              <span className="text-muted fw-bold d-block mb-1 fs-6">Lựa chọn của bạn:</span> 
+              <span className={`fs-5 ${q.isCorrect ? 'text-success fw-bold' : 'text-danger fw-bold text-decoration-line-through'}`}>
+                {q.userAnswer || '(Bỏ trống)'}
+              </span>
+            </div>
+
+            {!q.isCorrect && (
+              <div className="p-3 rounded-3 bg-white border border-success border-2 shadow-sm">
+                <span className="text-success fw-bold d-block mb-1 fs-6">✓ Đáp án đúng:</span>
+                <span className="text-dark fw-bold fs-5">{q.correctAnswer}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default TestResult;

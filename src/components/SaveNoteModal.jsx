@@ -1,0 +1,87 @@
+import React, { useState, useEffect } from 'react';
+import api from '../api/axiosConfig';
+import { toast } from 'react-toastify';
+
+function SaveNoteModal({ vocab, sets, onClose, onSaveSuccess }) {
+  const [selectedSetId, setSelectedSetId] = useState('new');
+  const [noteSetName, setNoteSetName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Tìm tất cả các học phần nằm trong thư mục Note
+  const noteSets = sets.filter(s => s.folder_path === 'Note' || (s.folder_path && s.folder_path.startsWith('Note/')));
+
+  useEffect(() => {
+    if (noteSets.length > 0) setSelectedSetId(noteSets[0].id);
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      if (selectedSetId === 'new') {
+        if (!noteSetName.trim()) { toast.warning("Nhập tên học phần Note!"); setIsSaving(false); return; }
+        // Tạo học phần mới và nạp luôn từ vựng này vào
+        const rawText = `${vocab.word} | ${vocab.furigana || ''} | ${vocab.meaning}`;
+        await api.post("/vocabularies/bulk-import", {
+          title: noteSetName.trim(),
+          raw_text: rawText,
+          folder_path: "Note"
+        });
+        toast.success("Đã tạo và lưu vào Note mới!");
+      } else {
+        // Lưu vào học phần Note đã có
+        await api.post('/vocabularies', {
+          word: vocab.word,
+          furigana: vocab.furigana,
+          meaning: vocab.meaning,
+          set_id: selectedSetId
+        });
+        toast.success("Đã thêm vào Note!");
+      }
+      onSaveSuccess();
+      onClose();
+    } catch (error) {
+      toast.error("Lỗi khi lưu vào Note!");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!vocab) return null;
+
+  return (
+    <div className="modal d-flex align-items-center justify-content-center fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1060, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+      <div className="card border-0 shadow-lg rounded-4 p-4" style={{ width: '90%', maxWidth: '400px' }}>
+        <h5 className="fw-bold mb-3" style={{ color: '#8a2be2' }}>📓 Lưu vào Note</h5>
+        <div className="bg-light p-3 rounded-3 mb-4 text-center shadow-sm">
+          <div className="fw-bold fs-5 text-dark">{vocab.word}</div>
+          {vocab.furigana && <div className="text-muted small fw-bold">{vocab.furigana}</div>}
+          <div className="text-primary mt-1 fw-bold">{vocab.meaning}</div>
+        </div>
+        
+        <form onSubmit={handleSave}>
+          <div className="mb-3">
+            <label className="form-label fw-bold text-muted small">Chọn học phần Note:</label>
+            <select className="form-select bg-light border-0 fw-bold shadow-sm" value={selectedSetId} onChange={e => setSelectedSetId(e.target.value)}>
+              {noteSets.map(s => <option key={s.id} value={s.id}>{s.title} ({s.vocabularies.length} từ)</option>)}
+              <option value="new">+ Tạo học phần Note mới</option>
+            </select>
+          </div>
+
+          {selectedSetId === 'new' && (
+            <div className="mb-4">
+              <input type="text" className="form-control bg-light border-0 shadow-sm fw-bold" placeholder="Tên học phần Note mới..." value={noteSetName} onChange={e => setNoteSetName(e.target.value)} autoFocus required />
+            </div>
+          )}
+
+          <div className="d-flex gap-2 mt-4">
+            <button type="button" className="btn btn-secondary w-50 fw-bold rounded-3" onClick={onClose} disabled={isSaving}>Hủy</button>
+            <button type="submit" className="btn w-50 fw-bold text-white rounded-3 hover-scale" style={{ backgroundColor: '#8a2be2' }} disabled={isSaving}>{isSaving ? 'Đang lưu...' : 'Lưu lại'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default SaveNoteModal;
