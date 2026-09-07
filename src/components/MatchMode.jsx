@@ -168,6 +168,7 @@ function MatchMode() {
     setLastMatchTime(null);
     setIsFinished(false);
     setIsStarted(true);
+    setIsFullscreen(true);
   };
 
   const handleCardClick = (card) => {
@@ -265,7 +266,7 @@ function MatchMode() {
   }
 
   return (
-    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflow: 'hidden' } : {}}>
+    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
       
       {showExitModal && (
         <div className="modal d-flex align-items-center justify-content-center fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
@@ -273,7 +274,7 @@ function MatchMode() {
             <h4 className="fw-bold text-danger mb-3">Cảnh báo</h4>
             <p className="text-dark mb-4 fs-5">Bạn đang trong ván chơi. Nếu thoát bây giờ sẽ mất toàn bộ tiến trình và điểm số. Chắc chắn thoát?</p>
             <div className="d-flex gap-3">
-              <button className="btn btn-danger fw-bold w-50 py-2 rounded-3" onClick={() => { setShowExitModal(false); setIsStarted(false); }}>Thoát luôn</button>
+              <button className="btn btn-danger fw-bold w-50 py-2 rounded-3" onClick={() => { setShowExitModal(false); setIsStarted(false); setIsFullscreen(false); }}>Thoát luôn</button>
               <button className="btn btn-secondary fw-bold w-50 py-2 rounded-3" onClick={() => setShowExitModal(false)}>Tiếp tục chơi</button>
             </div>
           </div>

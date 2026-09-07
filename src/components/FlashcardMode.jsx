@@ -56,6 +56,7 @@ function FlashcardMode() {
     setIsStarted(true);
     setIsFinished(false);
     setIsSlideshow(false); 
+    setIsFullscreen(true);
   };
 
   const handleNext = useCallback(() => {
@@ -251,7 +252,7 @@ function FlashcardMode() {
             <p className="fs-5 opacity-75 mb-4">Bạn đã ôn tập xong <strong>{vocabsToStudy.length}</strong> thẻ từ vựng.</p>
             <div className="d-flex flex-column gap-3">
               <button className="btn btn-warning py-3 fw-bold text-dark fs-5 shadow-sm rounded-4 hover-scale" onClick={handleShuffle}>🔀 Trộn & Học lại</button>
-              <button className="btn btn-light py-3 fw-bold fs-5 text-primary shadow-sm rounded-4 hover-scale" onClick={() => setIsStarted(false)}>Học phần khác</button>
+              <button className="btn btn-light py-3 fw-bold fs-5 text-primary shadow-sm rounded-4 hover-scale" onClick={() => { setIsStarted(false); setIsFullscreen(false); }}>Học phần khác</button>
             </div>
           </div>
           <div className="position-absolute bg-white opacity-10 rounded-circle" style={{ width: '200px', height: '200px', top: '-50px', right: '-50px' }}></div>
@@ -262,7 +263,7 @@ function FlashcardMode() {
   }
 
   return (
-    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center align-items-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { height: '100vh', overflow: 'hidden' } : {}}>
+    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
       
       {editingVocab && (
         <div className="modal d-flex align-items-center justify-content-center fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1060, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>

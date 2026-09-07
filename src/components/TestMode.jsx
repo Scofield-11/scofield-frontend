@@ -224,6 +224,7 @@ function TestMode() {
     setQuestions(newQuestions);
     setIsTestStarted(true);
     setIsTestFinished(false);
+    setIsFullscreen(true);
   };
 
   const handleAnswerChange = (index, value) => {
