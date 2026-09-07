@@ -24,7 +24,7 @@ function App() {
 
   const handleUnlock = (e) => {
     e.preventDefault();
-    if (passInput === "matkhau123") { // Đặt mật khẩu tại đây
+    if (passInput === "11072006") { // Đặt mật khẩu tại đây
       sessionStorage.setItem("app_unlocked", "true");
       setIsUnlocked(true);
     } else {
