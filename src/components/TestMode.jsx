@@ -28,6 +28,9 @@ function TestMode() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
 
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+
   const [history, setHistory] = useState([]);
   const [viewHistory, setViewHistory] = useState(null);
 
@@ -65,6 +68,11 @@ function TestMode() {
   };
 
   const handleExit = () => {
+    setShowExitModal(true);
+  };
+
+  const confirmExit = () => {
+    setShowExitModal(false);
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     setIsTestStarted(false);
     setIsTestFinished(false);
@@ -76,6 +84,42 @@ function TestMode() {
     document.addEventListener("fullscreenchange", handleFs);
     return () => document.removeEventListener("fullscreenchange", handleFs);
   }, []);
+
+  // KHÓA LỐI THOÁT KHI ĐANG LÀM BÀI TEST
+  useEffect(() => {
+    if (isTestStarted && !isTestFinished) {
+      window.history.pushState(null, '', window.location.href);
+      
+      const handlePopState = () => {
+        window.history.pushState(null, '', window.location.href); // Chặn back
+        setShowExitModal(true);
+      };
+      
+      const handleBeforeUnload = (e) => {
+        e.preventDefault();
+        e.returnValue = ''; // Bắt buộc để trình duyệt hiện cảnh báo chuẩn khi đóng tab
+      };
+
+      const handleLinkClick = (e) => {
+        const link = e.target.closest('a');
+        if (link && link.getAttribute('href') && !link.getAttribute('href').startsWith('#')) {
+          e.preventDefault();
+          e.stopPropagation(); // Chặn click menu nội bộ
+          setShowExitModal(true);
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      document.addEventListener('click', handleLinkClick, { capture: true });
+
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        document.removeEventListener('click', handleLinkClick, { capture: true });
+      };
+    }
+  }, [isTestStarted, isTestFinished]);
 
   useEffect(() => {
     if (selectedSetId === 'all') {
@@ -165,19 +209,19 @@ function TestMode() {
     setQuestions(updatedQuestions);
   };
 
-  const submitTest = () => {
+  const handleAttemptSubmit = () => {
     const answeredCount = questions.filter(q => q.userAnswer.trim() !== '').length;
     if (answeredCount === 0) {
       vibrate([100, 50, 100]);
       return toast.error("Vui lòng trả lời ít nhất 1 câu trước khi nộp bài!");
     }
-    if (answeredCount < questions.length) {
-      vibrate(50);
-      if (!window.confirm(`Bạn mới hoàn thành ${answeredCount}/${questions.length} câu. Bạn có chắc chắn muốn nộp bài?`)) return;
-    }
+    setShowSubmitModal(true);
+  };
 
+  const confirmSubmitTest = () => {
+    setShowSubmitModal(false);
     let correctCount = 0;
-      const gradedQuestions = questions.map(q => {
+    const gradedQuestions = questions.map(q => {
         const clean = (str) => str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s{2,}/g," ").trim().toLowerCase();
         let isCorrect = false;
         
@@ -333,6 +377,35 @@ function TestMode() {
 
   return (
     <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light overflow-auto' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
+      
+      {/* MODAL XÁC NHẬN THOÁT */}
+      {showExitModal && (
+        <div className="modal d-flex align-items-center justify-content-center fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <div className="card border-0 shadow-lg rounded-4 p-4 text-center" style={{ width: '90%', maxWidth: '400px' }}>
+            <h4 className="fw-bold text-danger mb-3">Cảnh báo</h4>
+            <p className="text-dark mb-4 fs-5">Bạn đang làm bài kiểm tra. Nếu thoát, kết quả hiện tại sẽ bị hủy và không được lưu lại. Bạn có chắc chắn muốn thoát?</p>
+            <div className="d-flex gap-3">
+              <button className="btn btn-danger fw-bold w-50 py-2 rounded-3" onClick={confirmExit}>Hủy bài thi</button>
+              <button className="btn btn-secondary fw-bold w-50 py-2 rounded-3" onClick={() => setShowExitModal(false)}>Tiếp tục làm bài</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL XÁC NHẬN NỘP BÀI */}
+      {showSubmitModal && (
+        <div className="modal d-flex align-items-center justify-content-center fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <div className="card border-0 shadow-lg rounded-4 p-4 text-center" style={{ width: '90%', maxWidth: '400px' }}>
+            <h4 className="fw-bold text-primary mb-3">Nộp bài</h4>
+            <p className="text-dark mb-4 fs-5">Bạn đã hoàn thành <strong className="text-success">{answeredCount}/{questions.length}</strong> câu. Bạn có chắc chắn muốn kết thúc bài thi?</p>
+            <div className="d-flex gap-3">
+              <button className="btn btn-secondary fw-bold w-50 py-2 rounded-3" onClick={() => setShowSubmitModal(false)}>Hủy</button>
+              <button className="btn btn-primary fw-bold w-50 py-2 rounded-3" onClick={confirmSubmitTest}>Kết thúc bài thi</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto" style={{ maxWidth: '1100px' }}>
         
         {/* THANH TOP ĐIỀU HƯỚNG */}
@@ -393,7 +466,7 @@ function TestMode() {
               </div>
             ))}
 
-            <button className="btn btn-success btn-lg px-5 py-4 fw-bold w-100 shadow-lg d-print-none mt-2 hover-scale transition-all" style={{ borderRadius: '16px', fontSize: '1.3rem' }} onClick={submitTest}>
+            <button className="btn btn-success btn-lg px-5 py-4 fw-bold w-100 shadow-lg d-print-none mt-2 hover-scale transition-all" style={{ borderRadius: '16px', fontSize: '1.3rem' }} onClick={handleAttemptSubmit}>
               Nộp bài ngay
             </button>
           </div>

@@ -14,7 +14,35 @@ import ExamMode from './components/ExamMode';
 import NotFound from "./pages/NotFound";
 import { VocabProvider } from "./context/VocabContext";
 
-// ... (Giữ nguyên PageWrapper và AnimatedRoutes) ...
+// Component bọc từng trang để tạo hiệu ứng
+const PageWrapper = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 15 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -15 }}
+    transition={{ duration: 0.3, ease: "easeOut" }}
+  >
+    {children}
+  </motion.div>
+);
+
+// Component xử lý hiệu ứng khi đổi Route
+function AnimatedRoutes() {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageWrapper><HomePage /></PageWrapper>} />
+        <Route path="/flashcards" element={<PageWrapper><FlashcardMode /></PageWrapper>} />
+        <Route path="/learn" element={<PageWrapper><LearnMode /></PageWrapper>} />
+        <Route path="/test" element={<PageWrapper><TestMode /></PageWrapper>} />
+        <Route path="/match" element={<PageWrapper><MatchMode /></PageWrapper>} />
+        <Route path="/exam" element={<PageWrapper><ExamMode /></PageWrapper>} />
+        <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
 
 function App() {
   const [isUnlocked, setIsUnlocked] = useState(
@@ -24,7 +52,7 @@ function App() {
 
   const handleUnlock = (e) => {
     e.preventDefault();
-    if (passInput === "11072006") { // Đặt mật khẩu tại đây
+    if (passInput === "matkhau123") { // Đổi mật khẩu của bạn tại đây
       sessionStorage.setItem("app_unlocked", "true");
       setIsUnlocked(true);
     } else {
@@ -32,7 +60,7 @@ function App() {
     }
   };
 
-  // Màn hình khóa chặn tải giao diện chính
+  // Màn hình khóa
   if (!isUnlocked) {
     return (
       <div className="d-flex align-items-center justify-content-center vh-100 bg-light">
@@ -47,7 +75,7 @@ function App() {
               onChange={(e) => setPassInput(e.target.value)}
               autoFocus
             />
-            <button type="submit" className="btn btn-primary btn-lg w-100 fw-bold rounded-3 hover-scale">
+            <button type="submit" className="btn btn-primary btn-lg w-100 fw-bold rounded-3">
               Mở Khóa
             </button>
           </form>
