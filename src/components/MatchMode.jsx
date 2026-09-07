@@ -19,6 +19,8 @@ function MatchMode() {
   
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
+  
+  const [showExitModal, setShowExitModal] = useState(false);
 
   useEffect(() => { fetchSets(); fetchAllVocabs(); }, [fetchSets, fetchAllVocabs]);
 
@@ -39,14 +41,36 @@ function MatchMode() {
   const vibrate = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) containerRef.current?.requestFullscreen().catch(() => {});
-    else document.exitFullscreen();
+    if (!isFullscreen) {
+      const elem = containerRef.current;
+      if (elem?.requestFullscreen) {
+        elem.requestFullscreen().catch(() => setIsFullscreen(true));
+      } else if (elem?.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        setIsFullscreen(true); // Fallback CSS
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => setIsFullscreen(false));
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+        setIsFullscreen(false);
+      } else {
+        setIsFullscreen(false);
+      }
+    }
   };
 
   useEffect(() => {
-    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleFs = () => setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
     document.addEventListener("fullscreenchange", handleFs);
-    return () => document.removeEventListener("fullscreenchange", handleFs);
+    document.addEventListener("webkitfullscreenchange", handleFs);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFs);
+      document.removeEventListener("webkitfullscreenchange", handleFs);
+    };
   }, []);
 
   useEffect(() => {
@@ -241,7 +265,21 @@ function MatchMode() {
   }
 
   return (
-    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflow: 'hidden' } : {}}>
+    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflow: 'hidden' } : {}}>
+      
+      {showExitModal && (
+        <div className="modal d-flex align-items-center justify-content-center fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <div className="card border-0 shadow-lg rounded-4 p-4 text-center" style={{ width: '90%', maxWidth: '400px' }}>
+            <h4 className="fw-bold text-danger mb-3">Cảnh báo</h4>
+            <p className="text-dark mb-4 fs-5">Bạn đang trong ván chơi. Nếu thoát bây giờ sẽ mất toàn bộ tiến trình và điểm số. Chắc chắn thoát?</p>
+            <div className="d-flex gap-3">
+              <button className="btn btn-danger fw-bold w-50 py-2 rounded-3" onClick={() => { setShowExitModal(false); setIsStarted(false); }}>Thoát luôn</button>
+              <button className="btn btn-secondary fw-bold w-50 py-2 rounded-3" onClick={() => setShowExitModal(false)}>Tiếp tục chơi</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto" style={{ maxWidth: '900px', width: '100%' }}>
         
         <div className="d-flex justify-content-between align-items-center mb-4">
@@ -254,7 +292,7 @@ function MatchMode() {
             <span className={gameMode === 'challenge' && timeElapsed <= 10 ? 'text-danger shake d-inline-block' : 'text-primary'}>{timeElapsed}s</span>
           </h4>
           
-          <button className="btn btn-outline-secondary fw-bold shadow-sm" onClick={() => setIsStarted(false)}>Thoát</button>
+          <button className="btn btn-outline-secondary fw-bold shadow-sm" onClick={() => setShowExitModal(true)}>Thoát</button>
         </div>
 
         {gameMode === 'challenge' && (

@@ -40,19 +40,43 @@ function LearnMode() {
   const vibrate = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) containerRef.current?.requestFullscreen().catch(() => toast.error("Không hỗ trợ Fullscreen"));
-    else document.exitFullscreen();
+    if (!isFullscreen) {
+      const elem = containerRef.current;
+      if (elem?.requestFullscreen) {
+        elem.requestFullscreen().catch(() => setIsFullscreen(true));
+      } else if (elem?.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        setIsFullscreen(true);
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => setIsFullscreen(false));
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+        setIsFullscreen(false);
+      } else {
+        setIsFullscreen(false);
+      }
+    }
   };
 
   const handleExit = () => {
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+    setIsFullscreen(false);
     setIsStarted(false);
   };
 
   useEffect(() => {
-    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleFs = () => setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
     document.addEventListener("fullscreenchange", handleFs);
-    return () => document.removeEventListener("fullscreenchange", handleFs);
+    document.addEventListener("webkitfullscreenchange", handleFs);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFs);
+      document.removeEventListener("webkitfullscreenchange", handleFs);
+    };
   }, []);
 
   const getSideLabel = (type, side) => {
@@ -369,7 +393,7 @@ function LearnMode() {
   const progressPercent = Math.round(((currentRoundIndex + (currentWordIndex/currentRoundWords.length)) / rounds.length) * 100);
 
   return (
-    <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflow: 'hidden' } : {}}>
+    <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflow: 'hidden' } : {}}>
       <div className="mx-auto" style={{ maxWidth: '650px', width: '100%' }}>
         
         {!isFinished && (

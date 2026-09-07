@@ -86,10 +86,25 @@ function FlashcardMode() {
   };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch(() => toast.error("Trình duyệt không hỗ trợ Fullscreen"));
+    if (!isFullscreen) {
+      const elem = containerRef.current;
+      if (elem?.requestFullscreen) {
+        elem.requestFullscreen().catch(() => setIsFullscreen(true));
+      } else if (elem?.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        setIsFullscreen(true);
+      }
     } else {
-      document.exitFullscreen();
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => setIsFullscreen(false));
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+        setIsFullscreen(false);
+      } else {
+        setIsFullscreen(false);
+      }
     }
   };
 
@@ -116,9 +131,13 @@ function FlashcardMode() {
   };
 
   useEffect(() => {
-    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleFs = () => setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
     document.addEventListener("fullscreenchange", handleFs);
-    return () => document.removeEventListener("fullscreenchange", handleFs);
+    document.addEventListener("webkitfullscreenchange", handleFs);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFs);
+      document.removeEventListener("webkitfullscreenchange", handleFs);
+    };
   }, []);
 
   useEffect(() => {
@@ -243,7 +262,7 @@ function FlashcardMode() {
   }
 
   return (
-    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center align-items-center' : ''}`} ref={containerRef} style={isFullscreen ? { height: '100vh', overflow: 'hidden' } : {}}>
+    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center align-items-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { height: '100vh', overflow: 'hidden' } : {}}>
       
       {editingVocab && (
         <div className="modal d-flex align-items-center justify-content-center fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1060, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
