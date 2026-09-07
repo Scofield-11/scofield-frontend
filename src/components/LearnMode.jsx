@@ -158,6 +158,7 @@ function LearnMode() {
     setMaxStreak(0);
     setIsStarted(true);
     setIsFinished(false);
+    if (!isFullscreen) toggleFullscreen();
   };
 
   const generateOptions = (currentWord, allData) => {
@@ -393,7 +394,7 @@ function LearnMode() {
   const progressPercent = Math.round(((currentRoundIndex + (currentWordIndex/currentRoundWords.length)) / rounds.length) * 100);
 
   return (
-    <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflow: 'hidden' } : {}}>
+    <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light mobile-fullscreen pt-4' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflowY: 'auto' } : {}}>
       <div className="mx-auto" style={{ maxWidth: '650px', width: '100%' }}>
         
         {!isFinished && (

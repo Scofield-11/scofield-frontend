@@ -224,7 +224,7 @@ function TestMode() {
     setQuestions(newQuestions);
     setIsTestStarted(true);
     setIsTestFinished(false);
-    setIsFullscreen(true);
+    if (!isFullscreen) toggleFullscreen();
   };
 
   const handleAnswerChange = (index, value) => {
@@ -384,7 +384,7 @@ function TestMode() {
 
   if (isTestFinished) {
     return (
-      <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light overflow-auto mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
+      <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light mobile-fullscreen pt-4' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflowY: 'auto' } : {}}>
         <div className="d-flex justify-content-between align-items-center mx-auto mb-4 d-print-none" style={{ maxWidth: '800px' }}>
           <button className="btn btn-outline-secondary fw-bold rounded-pill shadow-sm px-4 hover-bg-light transition-all" onClick={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }}>
             ← Đóng kết quả

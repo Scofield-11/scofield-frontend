@@ -168,7 +168,7 @@ function MatchMode() {
     setLastMatchTime(null);
     setIsFinished(false);
     setIsStarted(true);
-    setIsFullscreen(true);
+    if (!isFullscreen) toggleFullscreen();
   };
 
   const handleCardClick = (card) => {
@@ -266,7 +266,7 @@ function MatchMode() {
   }
 
   return (
-    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light d-flex flex-column justify-content-center mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
+    <div className={`container-fluid py-4 text-center transition-all ${isFullscreen ? 'bg-light mobile-fullscreen pt-4' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflowY: 'auto' } : {}}>
       
       {showExitModal && (
         <div className="modal d-flex align-items-center justify-content-center fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
