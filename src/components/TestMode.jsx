@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 import api from '../api/axiosConfig';
 import TestSetup from './TestSetup';
 import TestResult from './TestResult';
+import ExamHistoryTable from './ExamHistoryTable';
 
 function TestMode() {
   const { sets, allVocabs, loading, fetchSets, fetchAllVocabs } = useContext(VocabContext);
@@ -26,6 +27,35 @@ function TestMode() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
+
+  const [history, setHistory] = useState([]);
+  const [viewHistory, setViewHistory] = useState(null);
+
+  const fetchHistory = () => {
+    const historyData = JSON.parse(localStorage.getItem('scofieldTestHistory') || '[]');
+    setHistory(historyData);
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const handleClearHistory = () => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử Test?")) {
+      localStorage.removeItem('scofieldTestHistory');
+      setHistory([]);
+      toast.success("Đã xóa lịch sử thành công!");
+    }
+  };
+
+  const handleStarVocab = async (vocabId) => {
+    try {
+      await api.put(`/vocabularies/${vocabId}/star`, { is_starred: true });
+      toast.success("⭐ Đã lưu từ vựng vào danh sách yêu thích!");
+    } catch (error) {
+      toast.error("Lỗi khi lưu sao từ vựng");
+    }
+  };
 
   const vibrate = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
 
@@ -165,6 +195,25 @@ function TestMode() {
     setScore({ correct: correctCount, total: gradedQuestions.length });
     setIsTestFinished(true);
     window.scrollTo(0, 0);
+
+    // LƯU LỊCH SỬ TEST
+    const setName = selectedSetId === 'all' ? 'Tất cả từ vựng' : (sets.find(s => s.id === parseInt(selectedSetId))?.title || 'Học phần tùy chỉnh');
+    const newRecord = {
+      id: Date.now(),
+      title: `Test: ${setName}`,
+      score: correctCount,
+      total: gradedQuestions.length,
+      date: new Date().toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
+      wrongDetails: gradedQuestions.filter(q => !q.isCorrect).map(q => ({
+        question: q.questionText,
+        correct_ans: q.correctAnswer,
+        user_ans: q.userAnswer,
+        vocabId: q.id 
+      }))
+    };
+    const currentHistory = JSON.parse(localStorage.getItem('scofieldTestHistory') || '[]');
+    localStorage.setItem('scofieldTestHistory', JSON.stringify([newRecord, ...currentHistory]));
+    fetchHistory();
     
     const ratio = correctCount / gradedQuestions.length;
     if (ratio >= 0.8) {
@@ -192,15 +241,63 @@ function TestMode() {
     </div>
   );
 
+  if (viewHistory) {
+    return (
+      <div className="container mt-4 fade-in-slide" style={{ maxWidth: '800px' }}>
+        <button className="btn btn-outline-secondary fw-bold rounded-pill mb-4 px-4 shadow-sm" onClick={() => setViewHistory(null)}>← Quay lại danh sách</button>
+        <div className="alert alert-info shadow-sm border-0 mb-4 rounded-4 p-4">
+          <h4 className="fw-bold mb-3 text-primary">{viewHistory.title}</h4>
+          <p className="mb-0 text-dark">
+            Ngày làm: <strong>{viewHistory.date}</strong> <br/>
+            Kết quả: <strong className="text-primary fs-5">{viewHistory.score} / {viewHistory.total}</strong>
+          </p>
+        </div>
+        
+        {viewHistory.wrongDetails && viewHistory.wrongDetails.length === 0 ? (
+          <div className="alert alert-success fw-bold p-4 rounded-4 shadow-sm border-0">Tuyệt vời! Bạn không làm sai câu nào trong phiên này.</div>
+        ) : (
+          <div>
+            <h5 className="text-danger fw-bold mb-4">Các câu làm sai:</h5>
+            {viewHistory.wrongDetails && viewHistory.wrongDetails.map((q, i) => (
+              <div key={i} className="bg-white rounded-4 shadow-sm mb-4 p-4" style={{ transform: 'none' }}>
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <h5 className="mb-0 text-dark fw-bold">{q.question}</h5>
+                  {q.vocabId && (
+                    <button className="btn btn-sm btn-outline-warning fw-bold text-dark ms-3 text-nowrap" onClick={() => handleStarVocab(q.vocabId)} title="Lưu vào yêu thích">
+                      ⭐ Lưu
+                    </button>
+                  )}
+                </div>
+                <div className="p-3 rounded-3 bg-light border shadow-sm mb-3">
+                  <span className="text-muted fw-bold d-block mb-1 fs-6">Lựa chọn của bạn:</span>
+                  <span className="text-danger fw-bold text-decoration-line-through fs-5">{q.user_ans || '(Bỏ trống)'}</span>
+                </div>
+                <div className="p-3 rounded-3 bg-white border border-success border-2 shadow-sm">
+                  <span className="text-success fw-bold d-block mb-1 fs-6">✓ Đáp án đúng:</span>
+                  <span className="text-dark fw-bold fs-5">{q.correct_ans}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!isTestStarted) {
     return (
-      <TestSetup 
-        sets={sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId}
-        questionCount={questionCount} setQuestionCount={setQuestionCount} poolSize={poolSize}
-        questionFormat={questionFormat} setQuestionFormat={setQuestionFormat}
-        pairType={pairType} setPairType={setPairType} isReversed={isReversed} setIsReversed={setIsReversed}
-        generateTest={generateTest}
-      />
+      <>
+        <TestSetup 
+          sets={sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId}
+          questionCount={questionCount} setQuestionCount={setQuestionCount} poolSize={poolSize}
+          questionFormat={questionFormat} setQuestionFormat={setQuestionFormat}
+          pairType={pairType} setPairType={setPairType} isReversed={isReversed} setIsReversed={setIsReversed}
+          generateTest={generateTest}
+        />
+        <div className="container mb-5" style={{ maxWidth: '650px' }}>
+          <ExamHistoryTable history={history} setViewHistory={setViewHistory} handleClearHistory={handleClearHistory} />
+        </div>
+      </>
     );
   }
 
@@ -227,7 +324,7 @@ function TestMode() {
             {isFullscreen ? '↙️' : '⛶'}
           </button>
         </div>
-        <TestResult score={score} questions={questions} onRestart={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }} onCreateMistakeSet={handleCreateMistakeSet} />
+        <TestResult score={score} questions={questions} onRestart={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }} onCreateMistakeSet={handleCreateMistakeSet} onStarVocab={handleStarVocab} />
       </div>
     );
   }
