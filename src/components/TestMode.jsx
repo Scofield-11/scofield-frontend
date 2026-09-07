@@ -147,12 +147,19 @@ function TestMode() {
     }
 
     let correctCount = 0;
-    const gradedQuestions = questions.map(q => {
-      const clean = (str) => str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s{2,}/g," ").trim().toLowerCase();
-      const isCorrect = q.correctAnswer.split(',').map(s => clean(s)).includes(clean(q.userAnswer));
-      if (isCorrect) correctCount++;
-      return { ...q, isCorrect };
-    });
+      const gradedQuestions = questions.map(q => {
+        const clean = (str) => str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s{2,}/g," ").trim().toLowerCase();
+        let isCorrect = false;
+        
+        if (q.type === 'choice') {
+          isCorrect = clean(q.correctAnswer) === clean(q.userAnswer);
+        } else {
+          isCorrect = q.correctAnswer.split(',').map(s => clean(s)).includes(clean(q.userAnswer));
+        }
+        
+        if (isCorrect) correctCount++;
+        return { ...q, isCorrect };
+      });
 
     setQuestions(gradedQuestions);
     setScore({ correct: correctCount, total: gradedQuestions.length });
