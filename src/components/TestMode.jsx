@@ -361,7 +361,7 @@ function TestMode() {
     return (
       <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light overflow-auto' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
         <div className="d-flex justify-content-between align-items-center mx-auto mb-4 d-print-none" style={{ maxWidth: '800px' }}>
-          <button className="btn btn-outline-secondary fw-bold rounded-pill shadow-sm px-4 hover-bg-light transition-all" onClick={handleExit}>
+          <button className="btn btn-outline-secondary fw-bold rounded-pill shadow-sm px-4 hover-bg-light transition-all" onClick={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }}>
             ← Đóng kết quả
           </button>
           <button className="btn btn-light rounded-circle shadow-sm border-0 hover-bg-light transition-all" onClick={toggleFullscreen} title="Toàn màn hình (F)">

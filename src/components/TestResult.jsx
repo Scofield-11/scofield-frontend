@@ -75,6 +75,12 @@ function TestResult({ score, questions, onRestart, onCreateMistakeSet, onStarVoc
           </div>
         </div>
       ))}
+      
+      <div className="text-center mt-5 mb-4 d-print-none">
+        <button className="btn btn-outline-secondary px-5 py-3 fw-bold rounded-pill shadow-sm transition-all hover-scale" onClick={onRestart}>
+          ← Đóng kết quả
+        </button>
+      </div>
     </div>
   );
 }
