@@ -63,8 +63,26 @@ function TestMode() {
   const vibrate = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) containerRef.current?.requestFullscreen().catch(() => toast.error("Không hỗ trợ Fullscreen"));
-    else document.exitFullscreen();
+    if (!isFullscreen) {
+      const elem = containerRef.current;
+      if (elem?.requestFullscreen) {
+        elem.requestFullscreen().catch(() => setIsFullscreen(true)); // Fallback CSS nếu API bị chặn
+      } else if (elem?.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen(); // Dành cho iOS Safari cũ
+        setIsFullscreen(true);
+      } else {
+        setIsFullscreen(true); // Fallback toàn bộ bằng CSS cho Mobile
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => setIsFullscreen(false));
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+        setIsFullscreen(false);
+      } else {
+        setIsFullscreen(false); // Tắt CSS Fullscreen
+      }
+    }
   };
 
   const handleExit = () => {
@@ -73,16 +91,22 @@ function TestMode() {
 
   const confirmExit = () => {
     setShowExitModal(false);
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+    setIsFullscreen(false); // Dọn dẹp trạng thái
     setIsTestStarted(false);
     setIsTestFinished(false);
     window.scrollTo(0, 0);
   };
 
   useEffect(() => {
-    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleFs = () => setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
     document.addEventListener("fullscreenchange", handleFs);
-    return () => document.removeEventListener("fullscreenchange", handleFs);
+    document.addEventListener("webkitfullscreenchange", handleFs); // Lắng nghe sự kiện của Safari
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFs);
+      document.removeEventListener("webkitfullscreenchange", handleFs);
+    };
   }, []);
 
   // KHÓA LỐI THOÁT KHI ĐANG LÀM BÀI TEST
@@ -359,7 +383,7 @@ function TestMode() {
 
   if (isTestFinished) {
     return (
-      <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light overflow-auto' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
+      <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light overflow-auto mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
         <div className="d-flex justify-content-between align-items-center mx-auto mb-4 d-print-none" style={{ maxWidth: '800px' }}>
           <button className="btn btn-outline-secondary fw-bold rounded-pill shadow-sm px-4 hover-bg-light transition-all" onClick={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }}>
             ← Đóng kết quả
@@ -376,7 +400,7 @@ function TestMode() {
   const answeredCount = questions.filter(q => q.userAnswer.trim() !== '').length;
 
   return (
-    <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light overflow-auto' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
+    <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light overflow-auto mobile-fullscreen' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh' } : {}}>
       
       {/* MODAL XÁC NHẬN THOÁT */}
       {showExitModal && (
