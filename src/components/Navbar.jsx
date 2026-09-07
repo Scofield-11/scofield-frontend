@@ -31,7 +31,7 @@ function Navbar() {
             <Link key={item.path} to={item.path} className={`nav-link-custom ${isActive ? 'active' : ''}`}>
               <span className="nav-icon">{item.icon}</span>
               <span className="d-none d-lg-block fw-bold nav-text">{item.label}</span>
-              <span className="d-lg-none mobile-label">{item.label.split(' ')[0]}</span>
+              <span className="d-lg-none mobile-label">{item.label}</span>
             </Link>
           );
         })}
