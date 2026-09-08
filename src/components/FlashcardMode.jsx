@@ -8,12 +8,14 @@ import confetti from 'canvas-confetti';
 import api from '../api/axiosConfig';
 import { playSound } from '../utils/audio'; // Import âm thanh
 import SetSelector from './SetSelector';
+import ContentTypeSelector from './ContentTypeSelector';
 
 function FlashcardMode() {
-  const { sets, loading, fetchSets } = useContext(VocabContext);
+  const { sets, kanjiSets, loading, fetchSets, fetchKanjiSets } = useContext(VocabContext);
+  const [contentType, setContentType] = useState('vocab');
   const [selectedSetId, setSelectedSetId] = useState('all');
 
-  useEffect(() => { fetchSets(); }, [fetchSets]);
+  useEffect(() => { fetchSets(); fetchKanjiSets(); }, [fetchSets, fetchKanjiSets]);
   
   const [vocabsToStudy, setVocabsToStudy] = useState([]);
   const [isStarted, setIsStarted] = useState(false);
@@ -25,8 +27,7 @@ function FlashcardMode() {
 
   const [autoPlay, setAutoPlay] = useState(() => localStorage.getItem("flashcardAutoPlay") === "true");
   const [isSlideshow, setIsSlideshow] = useState(false);
-  const [frontSide, setFrontSide] = useState('word');
-  const [backSide, setBackSide] = useState('meaning');
+  const [isReversed, setIsReversed] = useState(false);
   
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
@@ -41,15 +42,17 @@ function FlashcardMode() {
 
   const handleStart = () => {
     let pool = [];
+    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
+
     if (selectedSetId === 'all') {
-      const validSets = sets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => s.vocabularies);
+      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
+      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
     } else {
-      const targetSet = sets.find(s => s.id === parseInt(selectedSetId));
-      if (targetSet) pool = targetSet.vocabularies;
+      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
+      if (targetSet) pool = contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies;
     }
 
-    if (pool.length === 0) return toast.warning("Học phần này chưa có từ vựng!");
+    if (pool.length === 0) return toast.warning("Học phần này chưa có dữ liệu!");
 
     setVocabsToStudy(pool);
     setCurrentIndex(0);
@@ -165,7 +168,11 @@ function FlashcardMode() {
   const handleQuickSave = async (e) => {
     e.preventDefault();
     try {
-      await api.put(`/vocabularies/${editingVocab.id}`, editingVocab);
+      if (contentType === 'kanji') {
+        await api.put(`/kanji/${editingVocab.id}`, editingVocab);
+      } else {
+        await api.put(`/vocabularies/${editingVocab.id}`, editingVocab);
+      }
       setVocabsToStudy(prev => {
         const newArr = [...prev];
         newArr[currentIndex] = editingVocab;
@@ -185,24 +192,38 @@ function FlashcardMode() {
           <h3 className="text-center mb-5 fw-bold text-dark" style={{ opacity: 0.8 }}>Thiết lập Flashcards</h3>
           
           <div className="mb-4">
-            <label className="form-label fw-bold text-muted mb-2">Chọn học phần muốn ôn:</label>
-            <SetSelector sets={sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
+            <label className="form-label fw-bold text-muted mb-2">1. Chọn loại nội dung:</label>
+            <ContentTypeSelector contentType={contentType} setContentType={setContentType} />
           </div>
 
-          <div className="row g-3 mb-4">
-            <div className="col-6">
-              <label className="form-label fw-bold text-muted small">MẶT TRƯỚC HIỂN THỊ:</label>
-              <select className="form-select bg-light border-0 fw-bold text-primary shadow-sm" style={{ borderRadius: '12px' }} value={frontSide} onChange={(e) => setFrontSide(e.target.value)}>
-                <option value="word">Từ vựng</option>
-                <option value="meaning">Ý nghĩa</option>
-              </select>
-            </div>
-            <div className="col-6">
-              <label className="form-label fw-bold text-muted small">MẶT SAU HIỂN THỊ:</label>
-              <select className="form-select bg-light border-0 fw-bold text-primary shadow-sm" style={{ borderRadius: '12px' }} value={backSide} onChange={(e) => setBackSide(e.target.value)}>
-                <option value="meaning">Ý nghĩa</option>
-                <option value="word">Từ vựng</option>
-              </select>
+          <div className="mb-4">
+            <label className="form-label fw-bold text-muted mb-2">2. Chọn học phần muốn ôn:</label>
+            <SetSelector sets={contentType === 'kanji' ? kanjiSets : sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
+          </div>
+
+          <div className="mb-5 d-flex flex-column gap-3">
+            <div className="d-flex align-items-center justify-content-between bg-light p-3 rounded-4 border-0 shadow-sm transition-all">
+              <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
+                <span className="text-muted small fw-bold d-block mb-1 text-truncate">MẶT TRƯỚC</span>
+                <span className="fw-bold fs-5 text-truncate d-block" style={{ color: '#8a2be2' }}>{isReversed ? 'Ý nghĩa' : (contentType === 'kanji' ? 'Kanji' : 'Từ vựng')}</span>
+              </div>
+              
+              <div className="px-2 px-md-3" style={{ flexShrink: 0 }}>
+                <button 
+                  type="button"
+                  className="btn btn-warning rounded-circle shadow-sm fw-bold d-flex align-items-center justify-content-center transition-all hover-scale m-0" 
+                  style={{width: '48px', height: '48px', fontSize: '1.2rem'}}
+                  onClick={() => setIsReversed(!isReversed)}
+                  title="Đảo chiều thẻ"
+                >
+                  🔄
+                </button>
+              </div>
+              
+              <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
+                <span className="text-muted small fw-bold d-block mb-1 text-truncate">MẶT SAU</span>
+                <span className="fw-bold text-success fs-5 text-truncate d-block">{isReversed ? (contentType === 'kanji' ? 'Kanji' : 'Từ vựng') : 'Ý nghĩa'}</span>
+              </div>
             </div>
           </div>
 
@@ -246,8 +267,19 @@ function FlashcardMode() {
           <div className="card border-0 shadow-lg rounded-4 p-4" style={{ width: '90%', maxWidth: '400px' }}>
             <h5 className="fw-bold mb-4" style={{ color: '#8a2be2' }}>✏️ Sửa nhanh thẻ</h5>
             <form onSubmit={handleQuickSave}>
-              <input type="text" className="form-control bg-light border-0 mb-3 fw-bold shadow-sm" value={editingVocab.word} onChange={e => setEditingVocab({...editingVocab, word: e.target.value})} placeholder="Từ vựng" required />
-              <input type="text" className="form-control bg-light border-0 mb-4 shadow-sm" value={editingVocab.meaning} onChange={e => setEditingVocab({...editingVocab, meaning: e.target.value})} placeholder="Ý nghĩa" required />
+              {contentType === 'kanji' ? (
+                <>
+                  <input type="text" className="form-control bg-light border-0 mb-3 fw-bold shadow-sm" value={editingVocab.kanji} onChange={e => setEditingVocab({...editingVocab, kanji: e.target.value})} placeholder="Kanji" required />
+                  <input type="text" className="form-control bg-light border-0 mb-3 shadow-sm" value={editingVocab.hanviet} onChange={e => setEditingVocab({...editingVocab, hanviet: e.target.value})} placeholder="Hán Việt" required />
+                  <input type="text" className="form-control bg-light border-0 mb-3 shadow-sm" value={editingVocab.hiragana} onChange={e => setEditingVocab({...editingVocab, hiragana: e.target.value})} placeholder="Hiragana" required />
+                  <input type="text" className="form-control bg-light border-0 mb-4 shadow-sm" value={editingVocab.meaning} onChange={e => setEditingVocab({...editingVocab, meaning: e.target.value})} placeholder="Ý nghĩa" required />
+                </>
+              ) : (
+                <>
+                  <input type="text" className="form-control bg-light border-0 mb-3 fw-bold shadow-sm" value={editingVocab.word} onChange={e => setEditingVocab({...editingVocab, word: e.target.value})} placeholder="Từ vựng" required />
+                  <input type="text" className="form-control bg-light border-0 mb-4 shadow-sm" value={editingVocab.meaning} onChange={e => setEditingVocab({...editingVocab, meaning: e.target.value})} placeholder="Ý nghĩa" required />
+                </>
+              )}
               <div className="d-flex gap-2">
                 <button type="button" className="btn btn-secondary w-50 fw-bold rounded-3" onClick={() => setEditingVocab(null)}>Hủy</button>
                 <button type="submit" className="btn w-50 fw-bold text-white rounded-3" style={{ backgroundColor: '#8a2be2' }}>Lưu lại</button>
@@ -286,10 +318,16 @@ function FlashcardMode() {
         <Flashcard 
           vocab={vocabsToStudy[currentIndex]} 
           autoPlay={autoPlay} 
-          frontSide={frontSide}
-          backSide={backSide}
+          contentType={contentType}
+          isReversed={isReversed}
           onEdit={setEditingVocab}
-          onSaveNote={setNoteModalVocab} 
+          onSaveNote={(item) => {
+            if (contentType === 'kanji') {
+              setNoteModalVocab({ word: item.kanji, furigana: item.hiragana, meaning: item.meaning });
+            } else {
+              setNoteModalVocab(item);
+            }
+          }} 
         />
       </div>
       

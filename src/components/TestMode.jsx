@@ -9,10 +9,11 @@ import ExamHistoryTable from './ExamHistoryTable';
 import SaveNoteModal from './SaveNoteModal';
 
 function TestMode() {
-  const { sets, allVocabs, loading, fetchSets, fetchAllVocabs } = useContext(VocabContext);
+  const { sets, allVocabs, kanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
+  const [contentType, setContentType] = useState('vocab');
   const [selectedSetId, setSelectedSetId] = useState('all');
 
-  useEffect(() => { fetchSets(); fetchAllVocabs(); }, [fetchSets, fetchAllVocabs]);
+  useEffect(() => { fetchSets(); fetchAllVocabs(); fetchKanjiSets(); }, [fetchSets, fetchAllVocabs, fetchKanjiSets]);
   
   const [poolSize, setPoolSize] = useState(0);
   const [questions, setQuestions] = useState([]);
@@ -23,7 +24,6 @@ function TestMode() {
   const [questionCount, setQuestionCount] = useState(10);
   const [questionFormat, setQuestionFormat] = useState('choice'); 
   
-  const [pairType, setPairType] = useState('word_meaning'); 
   const [isReversed, setIsReversed] = useState(false); 
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -139,44 +139,47 @@ function TestMode() {
   }, [isTestStarted, isTestFinished]);
 
   useEffect(() => {
+    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
+    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
+    
     if (selectedSetId === 'all') {
-      setPoolSize(allVocabs.length);
-      if (allVocabs.length < questionCount) setQuestionCount(allVocabs.length || 10);
+      setPoolSize(allData.length);
+      if (allData.length < questionCount) setQuestionCount(allData.length || 10);
     } else {
-      const targetSet = sets.find(s => s.id === parseInt(selectedSetId));
+      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
       if (targetSet) {
-        setPoolSize(targetSet.vocabularies.length);
-        if (targetSet.vocabularies.length < questionCount) setQuestionCount(targetSet.vocabularies.length);
+        const targetLen = contentType === 'kanji' ? targetSet.kanjis.length : targetSet.vocabularies.length;
+        setPoolSize(targetLen);
+        if (targetLen < questionCount) setQuestionCount(targetLen);
       }
     }
-  }, [selectedSetId, allVocabs, sets, questionCount]);
+  }, [selectedSetId, allVocabs, sets, kanjiSets, contentType, questionCount]);
 
   const getQuestionText = (vocab) => {
     if (!vocab) return "";
-    if (pairType === 'word_meaning') return isReversed ? vocab.meaning : vocab.word;
-    if (pairType === 'word_furigana') return isReversed ? (vocab.furigana || vocab.word) : vocab.word;
-    if (pairType === 'furigana_meaning') return isReversed ? vocab.meaning : (vocab.furigana || vocab.word);
+    return isReversed ? vocab.meaning : (contentType === 'kanji' ? vocab.kanji : vocab.word);
   };
 
   const getAnswerText = (vocab) => {
     if (!vocab) return "";
-    if (pairType === 'word_meaning') return isReversed ? vocab.word : vocab.meaning;
-    if (pairType === 'word_furigana') return isReversed ? vocab.word : (vocab.furigana || vocab.word);
-    if (pairType === 'furigana_meaning') return isReversed ? (vocab.furigana || vocab.word) : vocab.meaning;
+    return isReversed ? (contentType === 'kanji' ? vocab.kanji : vocab.word) : vocab.meaning;
   };
 
   const generateTest = () => {
     vibrate(40);
     let pool = [];
+    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
+    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
+
     if (selectedSetId === 'all') {
-      const validSets = sets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => s.vocabularies);
+      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
+      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
     } else {
-      const targetSet = sets.find(s => s.id === parseInt(selectedSetId));
-      if (targetSet) pool = targetSet.vocabularies;
+      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
+      if (targetSet) pool = contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies;
     }
 
-    if (pool.length === 0) return toast.warning("Học phần này chưa có từ vựng nào!");
+    if (pool.length === 0) return toast.warning("Học phần này chưa có dữ liệu nào!");
 
     const shuffled = [...pool].sort(() => 0.5 - Math.random());
     const selectedVocabs = shuffled.slice(0, Math.min(questionCount, pool.length));
@@ -190,13 +193,16 @@ function TestMode() {
       
       let options = [];
       if (type === 'choice') {
-        const maxSampleSize = Math.min(allVocabs.length, 60);
-        const sampleVocabs = [...allVocabs].sort(() => 0.5 - Math.random()).slice(0, maxSampleSize);
+        const maxSampleSize = Math.min(allData.length, 60);
+        const sampleVocabs = [...allData].sort(() => 0.5 - Math.random()).slice(0, maxSampleSize);
+        const currentText = contentType === 'kanji' ? vocab.kanji : vocab.word;
 
         const scoredAnswers = sampleVocabs.filter(v => v.id !== vocab.id).map(v => {
             let itemScore = 0;
-            const targetChars = vocab.word.split('');
-            targetChars.forEach(c => { if (v.word.includes(c)) itemScore += 1; });
+            const vText = contentType === 'kanji' ? v.kanji : v.word;
+            if (currentText && vText) {
+              currentText.split('').forEach(c => { if (vText.includes(c)) itemScore += 1; });
+            }
             return { ...v, itemScore: itemScore + Math.random() * 1.5 }; 
         });
           
@@ -220,7 +226,7 @@ function TestMode() {
         }
 
         if (wrongAnswers.length < 3) {
-          const backupVocabs = allVocabs.sort(() => 0.5 - Math.random());
+          const backupVocabs = allData.sort(() => 0.5 - Math.random());
           for (let i = 0; i < backupVocabs.length; i++) {
             const rawAnsStr = getAnswerText(backupVocabs[i]);
             const normalizedAns = normalizeStr(rawAnsStr);
@@ -351,8 +357,14 @@ function TestMode() {
                   <h5 className="mb-0 text-dark fw-bold">{q.question}</h5>
                   {q.vocabId && (
                     <button className="btn btn-light rounded-circle shadow-sm border-0 fs-5 d-flex align-items-center justify-content-center transition-all hover-scale ms-3 text-nowrap" style={{ width: '40px', height: '40px', color: '#8a2be2', flexShrink: 0 }} onClick={() => {
-                      const vocab = allVocabs.find(v => v.id === q.vocabId);
-                      if (vocab) setNoteModalVocab(vocab);
+                      let vocab = allVocabs.find(v => v.id === q.vocabId);
+                      if (vocab) {
+                        setNoteModalVocab(vocab);
+                      } else {
+                        const kSets = kanjiSets.flatMap(s => s.kanjis);
+                        vocab = kSets.find(v => v.id === q.vocabId);
+                        if (vocab) setNoteModalVocab({ word: vocab.kanji, furigana: vocab.hiragana, meaning: vocab.meaning });
+                      }
                     }} title="Lưu vào Note">
                       📓
                     </button>
@@ -378,10 +390,11 @@ function TestMode() {
     return (
       <>
         <TestSetup 
-          sets={sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId}
+          sets={sets} kanjiSets={kanjiSets} contentType={contentType} setContentType={setContentType}
+          selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId}
           questionCount={questionCount} setQuestionCount={setQuestionCount} poolSize={poolSize}
           questionFormat={questionFormat} setQuestionFormat={setQuestionFormat}
-          pairType={pairType} setPairType={setPairType} isReversed={isReversed} setIsReversed={setIsReversed}
+          isReversed={isReversed} setIsReversed={setIsReversed}
           generateTest={generateTest}
         />
         <div className="container mb-5" style={{ maxWidth: '650px' }}>
@@ -416,8 +429,15 @@ function TestMode() {
           </button>
         </div>
         <TestResult score={score} questions={questions} onRestart={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }} onCreateMistakeSet={handleCreateMistakeSet} onSaveNote={(vocabId) => {
-          const vocab = allVocabs.find(v => v.id === vocabId);
-          if (vocab) setNoteModalVocab(vocab);
+          const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
+          const vocab = allData.find(v => v.id === vocabId);
+          if (vocab) {
+            if (contentType === 'kanji') {
+              setNoteModalVocab({ word: vocab.kanji, furigana: vocab.hiragana, meaning: vocab.meaning });
+            } else {
+              setNoteModalVocab(vocab);
+            }
+          }
         }} />
       </div>
     );

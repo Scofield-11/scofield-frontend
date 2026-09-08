@@ -32,7 +32,6 @@ function SaveNoteModal({ vocab, sets, onClose, onSaveSuccess }) {
         // Lưu vào học phần Note đã có
         await api.post('/vocabularies', {
           word: vocab.word,
-          furigana: vocab.furigana,
           meaning: vocab.meaning,
           set_id: selectedSetId
         });
@@ -55,7 +54,6 @@ function SaveNoteModal({ vocab, sets, onClose, onSaveSuccess }) {
         <h5 className="fw-bold mb-3" style={{ color: '#8a2be2' }}>📓 Lưu vào Note</h5>
         <div className="bg-light p-3 rounded-3 mb-4 text-center shadow-sm">
           <div className="fw-bold fs-5 text-dark">{vocab.word}</div>
-          {vocab.furigana && <div className="text-muted small fw-bold">{vocab.furigana}</div>}
           <div className="text-primary mt-1 fw-bold">{vocab.meaning}</div>
         </div>
         

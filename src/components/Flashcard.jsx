@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { playSound } from '../utils/audio'; // Import bộ máy âm thanh
 
-function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', onEdit, onSaveNote }) {
+function Flashcard({ vocab, autoPlay, contentType = 'vocab', isReversed = false, onEdit, onSaveNote }) {
   const [flipped, setFlipped] = useState(false);
 
   const handleOpenNote = (e) => {
     e.stopPropagation();
-    if (onSaveNote) onSaveNote(vocab);
+    if (onSaveNote && vocab) onSaveNote(vocab);
   };
+
+  // Bảo vệ trường hợp vocab bị rỗng khi component render sớm
+  if (!vocab) return null;
 
   const detectLanguage = (text, type) => {
     if (type === 'meaning') return 'vi-VN';
@@ -16,16 +19,31 @@ function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', 
     return hasJapanese ? 'ja-JP' : 'en-US';
   };
 
-  const getText = (side) => {
-    if (side === 'word') return vocab.word;
-    return vocab.meaning;
+  const originalText = contentType === 'kanji' ? (vocab.kanji || '') : (vocab.word || '');
+  const meaningText = vocab.meaning || '';
+
+  const frontText = isReversed ? meaningText : originalText;
+  const backText = isReversed ? originalText : meaningText;
+  
+  const frontLang = detectLanguage(frontText, isReversed ? 'meaning' : 'original');
+  const backLang = detectLanguage(backText, isReversed ? 'original' : 'meaning');
+
+  const renderOriginalSide = () => {
+    if (contentType === 'kanji') {
+      return (
+        <>
+          <div className="text-muted fw-bold mb-1" style={{ fontSize: '1.2rem' }}>{vocab.hiragana}</div>
+          <div style={{ fontSize: '3.5rem', fontFamily: '"Yu Mincho", "MS Mincho", serif', lineHeight: '1.2' }}>{vocab.kanji}</div>
+          <div className="text-primary mt-2 fw-bold" style={{ fontSize: '1.1rem', letterSpacing: '2px' }}>{vocab.hanviet}</div>
+        </>
+      );
+    }
+    return <span>{vocab.word}</span>;
   };
 
-  const frontText = getText(frontSide);
-  const backText = getText(backSide);
-  
-  const frontLang = detectLanguage(frontText, frontSide);
-  const backLang = detectLanguage(backText, backSide);
+  const renderMeaningSide = () => {
+    return <span>{vocab.meaning}</span>;
+  };
 
   const speak = (text, lang) => {
     if ('speechSynthesis' in window && text) {
@@ -40,7 +58,7 @@ function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', 
   useEffect(() => {
     setFlipped(false);
     if (autoPlay) setTimeout(() => speak(frontText, frontLang), 250);
-  }, [vocab, autoPlay, frontSide, backSide]);
+  }, [vocab, autoPlay, contentType, isReversed]);
 
   const handleFlip = () => {
     playSound('pop'); // <--- Âm thanh lật thẻ
@@ -65,7 +83,7 @@ function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', 
             title="Lưu từ này vào sổ tay (Note)"
           >📓</button>
           
-          <span>{frontText}</span>
+          {isReversed ? renderMeaningSide() : renderOriginalSide()}
           
           <button 
             className="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle shadow-sm transition-all hover-bg-light hover-scale"
@@ -88,7 +106,7 @@ function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', 
             title="Sửa nhanh từ này"
           >✏️</button>
           
-          <span>{backText}</span>
+          {isReversed ? renderOriginalSide() : renderMeaningSide()}
           
           <button 
             className="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle shadow-sm transition-all hover-scale"

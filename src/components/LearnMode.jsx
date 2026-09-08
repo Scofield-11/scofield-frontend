@@ -6,17 +6,18 @@ import confetti from 'canvas-confetti';
 import api from '../api/axiosConfig';
 import { playSound } from '../utils/audio'; // Import âm thanh
 import SetSelector from './SetSelector';
+import ContentTypeSelector from './ContentTypeSelector';
 
 const CHUNK_SIZE = 4;
 
 function LearnMode() {
-  const { sets, allVocabs, loading, fetchSets, fetchAllVocabs } = useContext(VocabContext);
+  const { sets, allVocabs, kanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
+  const [contentType, setContentType] = useState('vocab');
   const [selectedSetId, setSelectedSetId] = useState('all');
 
-  useEffect(() => { fetchSets(); fetchAllVocabs(); }, [fetchSets, fetchAllVocabs]);
+  useEffect(() => { fetchSets(); fetchAllVocabs(); fetchKanjiSets(); }, [fetchSets, fetchAllVocabs, fetchKanjiSets]);
 
   const [isStarted, setIsStarted] = useState(false);
-  const [pairType, setPairType] = useState('word_meaning');
   const [isReversed, setIsReversed] = useState(false); 
   
   const [rounds, setRounds] = useState([]);
@@ -79,24 +80,21 @@ function LearnMode() {
     };
   }, []);
 
-  const getSideLabel = (type, side) => {
-    return side === 'front' ? 'Từ vựng' : 'Ý nghĩa';
-  };
-
-  const getFrontLabel = () => isReversed ? getSideLabel(pairType, 'back') : getSideLabel(pairType, 'front');
-  const getBackLabel = () => isReversed ? getSideLabel(pairType, 'front') : getSideLabel(pairType, 'back');
+  const getFrontLabel = () => isReversed ? 'Ý nghĩa' : (contentType === 'kanji' ? 'Kanji' : 'Từ vựng');
+  const getBackLabel = () => isReversed ? (contentType === 'kanji' ? 'Kanji' : 'Từ vựng') : 'Ý nghĩa';
 
   const getQuestionText = (vocab) => {
     if (!vocab) return "";
-    return isReversed ? vocab.meaning : vocab.word;
+    return isReversed ? vocab.meaning : (contentType === 'kanji' ? vocab.kanji : vocab.word);
   };
 
   const getAnswerText = (vocab) => {
     if (!vocab) return "";
-    return isReversed ? vocab.word : vocab.meaning;
+    return isReversed ? (contentType === 'kanji' ? vocab.kanji : vocab.word) : vocab.meaning;
   };
 
   const updateSRS = async (vocabId, isCorrect) => {
+    if (contentType === 'kanji') return; // Kanji chưa có SRS
     try { await api.put(`/vocabularies/${vocabId}/srs`, { is_correct: isCorrect }); } 
     catch (err) { console.error("Lỗi cập nhật SRS:", err); }
   };
@@ -117,21 +115,26 @@ function LearnMode() {
 
   const handleStart = () => {
     let pool = [];
+    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
+
     if (selectedSetId === 'all') {
-      const validSets = sets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => s.vocabularies);
+      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
+      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
     } else {
-      const targetSet = sets.find(s => s.id === parseInt(selectedSetId));
-      if (targetSet) pool = targetSet.vocabularies;
+      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
+      if (targetSet) pool = contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies;
     }
 
     if (onlyDue) {
+      if (contentType === 'kanji') {
+        return toast.warning("Chế độ ôn tập đến hạn (SRS) chưa hỗ trợ cho Kanji!");
+      }
       const now = new Date();
       pool = pool.filter(v => v.next_review && new Date(v.next_review) <= now);
       if (pool.length === 0) return toast.success("Tuyệt vời! Không có từ vựng nào đến hạn.");
     }
 
-    if (pool.length === 0) return toast.warning("Học phần này chưa có từ vựng phù hợp!");
+    if (pool.length === 0) return toast.warning("Học phần này chưa có dữ liệu phù hợp!");
 
     const shuffled = [...pool].sort(() => 0.5 - Math.random());
     const chunked = [];
@@ -142,7 +145,9 @@ function LearnMode() {
     setCurrentWordIndex(0);
     setMode('choice');
     setCurrentRoundWords([...chunked[0]]);
-    generateOptions(chunked[0][0], allVocabs);
+    
+    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
+    generateOptions(chunked[0][0], allData);
     setStreak(0);
     setMaxStreak(0);
     setIsStarted(true);
@@ -152,9 +157,14 @@ function LearnMode() {
 
   const generateOptions = (currentWord, allData) => {
     if (!currentWord) return;
+    const currentText = contentType === 'kanji' ? currentWord.kanji : currentWord.word;
+
     const scoredAnswers = allData.filter(v => v.id !== currentWord.id).map(v => {
       let score = 0;
-      currentWord.word.split('').forEach(c => { if (v.word.includes(c)) score += 1; });
+      const vText = contentType === 'kanji' ? v.kanji : v.word;
+      if (currentText && vText) {
+        currentText.split('').forEach(c => { if (vText.includes(c)) score += 1; });
+      }
       return { ...v, score: score + Math.random() * 0.5 };
     });
     scoredAnswers.sort((a, b) => b.score - a.score);
@@ -165,11 +175,12 @@ function LearnMode() {
   const handleNextAfterFeedback = () => {
     setFeedback(null);
     setInputText('');
+    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
 
     if (currentWordIndex < currentRoundWords.length - 1) {
       const nextWord = currentRoundWords[currentWordIndex + 1];
       setCurrentWordIndex(currentWordIndex + 1);
-      if (mode === 'choice') generateOptions(nextWord, allVocabs);
+      if (mode === 'choice') generateOptions(nextWord, allData);
     } else {
       if (mode === 'choice') {
         setMode('typing');
@@ -182,7 +193,7 @@ function LearnMode() {
           setCurrentWordIndex(0);
           setMode('choice');
           setCurrentRoundWords([...rounds[nextRoundIdx]]);
-          generateOptions(rounds[nextRoundIdx][0], allVocabs);
+          generateOptions(rounds[nextRoundIdx][0], allData);
         } else {
           setIsFinished(true);
           playSound('win'); // Tiếng hoàn thành
@@ -271,27 +282,13 @@ function LearnMode() {
           <h3 className="text-center mb-5 fw-bold text-dark">Cài đặt Chế độ Học</h3>
           
           <div className="mb-4">
-            <label className="form-label fw-bold text-muted mb-2">1. Chọn học phần muốn học:</label>
-            <SetSelector sets={sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
+            <label className="form-label fw-bold text-muted mb-2">1. Chọn loại nội dung:</label>
+            <ContentTypeSelector contentType={contentType} setContentType={setContentType} />
           </div>
 
           <div className="mb-4">
-            <label className="form-label fw-bold text-muted mb-3">2. Nội dung vắt óc:</label>
-            <div className="row g-3">
-              <div className="col-12 col-md-12">
-                <div 
-                  className={`card h-100 border-2 shadow-sm transition-all rounded-4 ${pairType === 'word_meaning' ? 'border-primary bg-primary text-white' : 'border-light bg-white text-dark hover-bg-light'}`}
-                  style={{cursor: 'pointer'}}
-                  onClick={() => { setPairType('word_meaning'); setIsReversed(false); }}
-                >
-                  <div className="card-body p-3 p-md-4 text-center">
-                    <div className="display-6 mb-2">📖</div>
-                    <h6 className="fw-bold mb-1">Dịch nghĩa</h6>
-                    <small className={pairType === 'word_meaning' ? 'text-white-50' : 'text-muted'} style={{fontSize: '0.8rem'}}>Từ vựng ↔ Ý nghĩa</small>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <label className="form-label fw-bold text-muted mb-2">2. Chọn học phần muốn học:</label>
+            <SetSelector sets={contentType === 'kanji' ? kanjiSets : sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
           </div>
 
           <div className="mb-4 text-start">

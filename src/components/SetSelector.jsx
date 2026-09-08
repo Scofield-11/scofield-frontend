@@ -90,7 +90,7 @@ function SetSelector({ sets, selectedSetId, setSelectedSetId }) {
             ) : (
               Object.entries(groupedSets).map(([folder, folderSets]) => {
                 const isExpanded = isSearching || expandedFolders[folder];
-                const folderVocabCount = folderSets.reduce((sum, s) => sum + s.vocabularies.length, 0);
+                const folderVocabCount = folderSets.reduce((sum, s) => sum + (s.vocabularies?.length || s.kanjis?.length || 0), 0);
 
                 return (
                   <div key={folder} className="mb-2">
@@ -115,7 +115,7 @@ function SetSelector({ sets, selectedSetId, setSelectedSetId }) {
                               onClick={() => handleSelect(s.id)}
                             >
                               <span className="text-truncate pe-2">{s.title}</span>
-                              <span className={`badge ${isSelected ? 'bg-light text-primary' : 'bg-light text-muted border'} ms-auto`}>{s.vocabularies.length} từ</span>
+                              <span className={`badge ${isSelected ? 'bg-light text-primary' : 'bg-light text-muted border'} ms-auto`}>{s.vocabularies?.length || s.kanjis?.length || 0} từ</span>
                             </button>
                           );
                         })}

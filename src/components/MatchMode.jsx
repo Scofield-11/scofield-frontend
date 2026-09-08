@@ -4,13 +4,14 @@ import { toast } from 'react-toastify';
 import LoadingSkeleton from './LoadingSkeleton';
 import confetti from 'canvas-confetti';
 import SetSelector from './SetSelector';
+import ContentTypeSelector from './ContentTypeSelector';
 
 function MatchMode() {
-  const { sets, allVocabs, loading, fetchSets, fetchAllVocabs } = useContext(VocabContext);
+  const { sets, allVocabs, kanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
+  const [contentType, setContentType] = useState('vocab');
   const [selectedSetId, setSelectedSetId] = useState('all');
   const [difficulty, setDifficulty] = useState(6); 
   const [gameMode, setGameMode] = useState('normal'); 
-  const [pairType, setPairType] = useState('word_meaning'); // Đổi tên biến cho thống nhất
   
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
@@ -23,12 +24,12 @@ function MatchMode() {
   
   const [showExitModal, setShowExitModal] = useState(false);
 
-  useEffect(() => { fetchSets(); fetchAllVocabs(); }, [fetchSets, fetchAllVocabs]);
+  useEffect(() => { fetchSets(); fetchAllVocabs(); fetchKanjiSets(); }, [fetchSets, fetchAllVocabs, fetchKanjiSets]);
 
   useEffect(() => {
-    setBestTime(localStorage.getItem(`matchBest_${selectedSetId}_${difficulty}_${pairType}`) || null);
-    setHighScore(localStorage.getItem(`matchScore_${selectedSetId}_${pairType}`) || null);
-  }, [selectedSetId, difficulty, pairType]);
+    setBestTime(localStorage.getItem(`matchBest_${selectedSetId}_${difficulty}_${contentType}`) || null);
+    setHighScore(localStorage.getItem(`matchScore_${selectedSetId}_${contentType}`) || null);
+  }, [selectedSetId, difficulty, contentType]);
   
   const [isStarted, setIsStarted] = useState(false);
   const [cards, setCards] = useState([]);
@@ -97,7 +98,7 @@ function MatchMode() {
         setIsFinished(true);
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
         vibrate([100, 50, 100, 50, 200]);
-        const key = `matchBest_${selectedSetId}_${cards.length / 2}_${pairType}`;
+        const key = `matchBest_${selectedSetId}_${cards.length / 2}_${contentType}`;
         if (!bestTime || timeElapsed < bestTime) {
           localStorage.setItem(key, timeElapsed);
           setBestTime(timeElapsed);
@@ -105,31 +106,35 @@ function MatchMode() {
         }
       }
     }
-  }, [matchedIds, cards, gameMode, timeElapsed, bestTime, selectedSetId, pairType]);
+  }, [matchedIds, cards, gameMode, timeElapsed, bestTime, selectedSetId, contentType]);
 
   useEffect(() => {
     if (isFinished && gameMode === 'challenge') {
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
       vibrate([100, 50, 100, 50, 200]);
       if (!highScore || score > highScore) {
-        localStorage.setItem(`matchScore_${selectedSetId}_${pairType}`, score);
+        localStorage.setItem(`matchScore_${selectedSetId}_${contentType}`, score);
         setHighScore(score);
         toast.success(`🏆 Điểm cao mới: ${score} điểm!`);
       }
     }
-  }, [isFinished, gameMode, score, highScore, selectedSetId, pairType]);
+  }, [isFinished, gameMode, score, highScore, selectedSetId, contentType]);
 
   const getCardTexts = (vocab) => {
+    if (contentType === 'kanji') return [vocab.kanji, vocab.meaning];
     return [vocab.word, vocab.meaning];
   };
 
   const generateCards = () => {
     let pool = [];
+    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
+    
     if (selectedSetId === 'all') {
-      const validSets = sets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => s.vocabularies);
+      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
+      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
     } else {
-      pool = sets.find(s => s.id === parseInt(selectedSetId))?.vocabularies || [];
+      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
+      pool = targetSet ? (contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies) : [];
     }
 
     const actualDifficulty = Math.min(difficulty, pool.length);
@@ -138,7 +143,11 @@ function MatchMode() {
     
     const scoredPool = pool.map(v => {
       let sc = v.id === pivotWord.id ? 999 : 0;
-      pivotWord.word.split('').forEach(c => { if (v.word.includes(c)) sc += 1; });
+      const currentText = contentType === 'kanji' ? pivotWord.kanji : pivotWord.word;
+      const vText = contentType === 'kanji' ? v.kanji : v.word;
+      if (currentText && vText) {
+        currentText.split('').forEach(c => { if (vText.includes(c)) sc += 1; });
+      }
       return { ...v, score: sc + Math.random() };
     }).sort((a, b) => b.score - a.score);
     
@@ -153,8 +162,18 @@ function MatchMode() {
   };
 
   const startGame = () => {
-    let pool = selectedSetId === 'all' ? allVocabs : (sets.find(s => s.id === parseInt(selectedSetId))?.vocabularies || []);
-    if (pool.length < 2) return toast.warning(`Cần ít nhất 2 từ vựng để chơi!`);
+    let pool = [];
+    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
+    
+    if (selectedSetId === 'all') {
+      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
+      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
+    } else {
+      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
+      pool = targetSet ? (contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies) : [];
+    }
+
+    if (pool.length < 2) return toast.warning(`Cần ít nhất 2 thẻ để chơi!`);
 
     generateCards();
     setSelectedCards([]);
@@ -221,17 +240,13 @@ function MatchMode() {
             </div>
           </div>
           <div className="mb-3">
-            <label className="form-label fw-bold text-muted">Chọn học phần:</label>
-            <SetSelector sets={sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
+            <label className="form-label fw-bold text-muted">Chọn loại nội dung:</label>
+            <ContentTypeSelector contentType={contentType} setContentType={setContentType} />
           </div>
 
           <div className="mb-3">
-            <label className="form-label fw-bold text-muted">Cặp thẻ muốn ghép:</label>
-            <select className="form-select form-select-lg bg-light border-0 fw-bold text-primary" value={pairType} onChange={(e) => setPairType(e.target.value)}>
-              <option value="word_meaning">Từ vựng (Kanji) ↔ Ý nghĩa</option>
-              <option value="word_furigana">Từ vựng (Kanji) ↔ Phiên âm (Hiragana)</option>
-              <option value="furigana_meaning">Phiên âm (Hiragana) ↔ Ý nghĩa</option>
-            </select>
+            <label className="form-label fw-bold text-muted">Chọn học phần:</label>
+            <SetSelector sets={contentType === 'kanji' ? kanjiSets : sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
           </div>
 
           <div className="mb-4">
