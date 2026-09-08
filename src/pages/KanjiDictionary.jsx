@@ -21,7 +21,8 @@ function KanjiDictionary() {
       const res = await api.get('/kanji-sets');
       setKanjiSets(res.data);
     } catch (error) {
-      toast.error("Lỗi khi tải dữ liệu Kanji");
+      console.error("Kanji fetch error:", error.response?.status, error.response?.data, error.message);
+      toast.error(error.response?.data?.detail || `Lỗi Kanji: ${error.response?.status || error.message}`);
     } finally {
       setIsLoading(false);
     }
