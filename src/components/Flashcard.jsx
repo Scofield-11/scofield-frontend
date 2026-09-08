@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { playSound } from '../utils/audio'; // Import bộ máy âm thanh
 
-function Flashcard({ vocab, autoPlay, contentType = 'vocab', isReversed = false, onEdit, onSaveNote }) {
+function Flashcard({ vocab, autoPlay, contentType = 'vocab', isReversed = false, kanjiFront = 'kanji', kanjiBack = 'meaning', onEdit, onSaveNote }) {
   const [flipped, setFlipped] = useState(false);
 
   const handleOpenNote = (e) => {
@@ -12,37 +12,34 @@ function Flashcard({ vocab, autoPlay, contentType = 'vocab', isReversed = false,
   // Bảo vệ trường hợp vocab bị rỗng khi component render sớm
   if (!vocab) return null;
 
-  const detectLanguage = (text, type) => {
-    if (type === 'meaning') return 'vi-VN';
+  const detectLanguage = (text, field) => {
+    if (field === 'kanji' || field === 'hiragana' || field === 'word') return 'ja-JP';
+    if (field === 'hanviet' || field === 'meaning') return 'vi-VN';
     if (!text) return 'en-US';
     const hasJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text);
     return hasJapanese ? 'ja-JP' : 'en-US';
   };
 
-  const originalText = contentType === 'kanji' ? (vocab.kanji || '') : (vocab.word || '');
-  const meaningText = vocab.meaning || '';
+  const frontField = contentType === 'kanji' ? kanjiFront : (isReversed ? 'meaning' : 'word');
+  const backField = contentType === 'kanji' ? kanjiBack : (isReversed ? 'word' : 'meaning');
 
-  const frontText = isReversed ? meaningText : originalText;
-  const backText = isReversed ? originalText : meaningText;
+  const frontText = vocab[frontField] || '';
+  const backText = vocab[backField] || '';
   
-  const frontLang = detectLanguage(frontText, isReversed ? 'meaning' : 'original');
-  const backLang = detectLanguage(backText, isReversed ? 'original' : 'meaning');
+  const frontLang = detectLanguage(frontText, frontField);
+  const backLang = detectLanguage(backText, backField);
 
-  const renderOriginalSide = () => {
-    if (contentType === 'kanji') {
-      return (
-        <>
-          <div className="text-muted fw-bold mb-1" style={{ fontSize: '1.2rem' }}>{vocab.hiragana}</div>
-          <div style={{ fontSize: '3.5rem', fontFamily: '"Yu Mincho", "MS Mincho", serif', lineHeight: '1.2' }}>{vocab.kanji}</div>
-          <div className="text-primary mt-2 fw-bold" style={{ fontSize: '1.1rem', letterSpacing: '2px' }}>{vocab.hanviet}</div>
-        </>
-      );
+  const renderField = (field) => {
+    if (field === 'kanji') {
+      return <div style={{ fontSize: '3.5rem', fontFamily: '"Yu Mincho", "MS Mincho", serif', lineHeight: '1.2' }}>{vocab[field]}</div>;
     }
-    return <span>{vocab.word}</span>;
-  };
-
-  const renderMeaningSide = () => {
-    return <span>{vocab.meaning}</span>;
+    if (field === 'hanviet') {
+      return <div className="text-primary fw-bold" style={{ fontSize: '1.5rem', letterSpacing: '2px' }}>{vocab[field]}</div>;
+    }
+    if (field === 'hiragana') {
+      return <div className="text-muted fw-bold" style={{ fontSize: '1.5rem' }}>{vocab[field]}</div>;
+    }
+    return <span>{vocab[field]}</span>;
   };
 
   const speak = (text, lang) => {
@@ -83,7 +80,7 @@ function Flashcard({ vocab, autoPlay, contentType = 'vocab', isReversed = false,
             title="Lưu từ này vào sổ tay (Note)"
           >📓</button>
           
-          {isReversed ? renderMeaningSide() : renderOriginalSide()}
+          {renderField(frontField)}
           
           <button 
             className="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle shadow-sm transition-all hover-bg-light hover-scale"
@@ -106,7 +103,7 @@ function Flashcard({ vocab, autoPlay, contentType = 'vocab', isReversed = false,
             title="Sửa nhanh từ này"
           >✏️</button>
           
-          {isReversed ? renderOriginalSide() : renderMeaningSide()}
+          {renderField(backField)}
           
           <button 
             className="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle shadow-sm transition-all hover-scale"

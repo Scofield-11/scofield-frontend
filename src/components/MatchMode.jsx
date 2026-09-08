@@ -12,6 +12,8 @@ function MatchMode() {
   const [selectedSetId, setSelectedSetId] = useState('all');
   const [difficulty, setDifficulty] = useState(6); 
   const [gameMode, setGameMode] = useState('normal'); 
+  const [kanjiMatchA, setKanjiMatchA] = useState('kanji');
+  const [kanjiMatchB, setKanjiMatchB] = useState('meaning');
   
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
@@ -121,7 +123,7 @@ function MatchMode() {
   }, [isFinished, gameMode, score, highScore, selectedSetId, contentType]);
 
   const getCardTexts = (vocab) => {
-    if (contentType === 'kanji') return [vocab.kanji, vocab.meaning];
+    if (contentType === 'kanji') return [vocab[kanjiMatchA], vocab[kanjiMatchB]];
     return [vocab.word, vocab.meaning];
   };
 
@@ -143,8 +145,8 @@ function MatchMode() {
     
     const scoredPool = pool.map(v => {
       let sc = v.id === pivotWord.id ? 999 : 0;
-      const currentText = contentType === 'kanji' ? pivotWord.kanji : pivotWord.word;
-      const vText = contentType === 'kanji' ? v.kanji : v.word;
+      const currentText = contentType === 'kanji' ? pivotWord[kanjiMatchA] : pivotWord.word;
+      const vText = contentType === 'kanji' ? v[kanjiMatchA] : v.word;
       if (currentText && vText) {
         currentText.split('').forEach(c => { if (vText.includes(c)) sc += 1; });
       }
@@ -248,6 +250,27 @@ function MatchMode() {
             <label className="form-label fw-bold text-muted">Chọn học phần:</label>
             <SetSelector sets={contentType === 'kanji' ? kanjiSets : sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
           </div>
+
+          {contentType === 'kanji' && (
+            <div className="mb-3">
+              <label className="form-label fw-bold text-muted">Cặp thẻ muốn ghép:</label>
+              <div className="d-flex align-items-center justify-content-center gap-2 bg-light p-2 rounded-4 shadow-sm">
+                <select className="form-select bg-white border-0 fw-bold shadow-sm text-center text-primary" value={kanjiMatchA} onChange={(e) => setKanjiMatchA(e.target.value)}>
+                  <option value="kanji" className="text-dark">Hán tự</option>
+                  <option value="hanviet" className="text-dark">Hán Việt</option>
+                  <option value="hiragana" className="text-dark">Phiên âm</option>
+                  <option value="meaning" className="text-dark">Ý nghĩa</option>
+                </select>
+                <span className="fw-bold text-muted">↔</span>
+                <select className="form-select bg-white border-0 fw-bold shadow-sm text-center text-success" value={kanjiMatchB} onChange={(e) => setKanjiMatchB(e.target.value)}>
+                  <option value="kanji" className="text-dark">Hán tự</option>
+                  <option value="hanviet" className="text-dark">Hán Việt</option>
+                  <option value="hiragana" className="text-dark">Phiên âm</option>
+                  <option value="meaning" className="text-dark">Ý nghĩa</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="mb-4">
             <label className="form-label fw-bold text-muted">Độ khó (Số cặp thẻ):</label>

@@ -2,9 +2,31 @@ import React from 'react';
 import SetSelector from './SetSelector';
 import ContentTypeSelector from './ContentTypeSelector';
 
-function TestSetup({ sets, kanjiSets, contentType, setContentType, selectedSetId, setSelectedSetId, questionCount, setQuestionCount, poolSize, questionFormat, setQuestionFormat, isReversed, setIsReversed, generateTest }) {
-  const getFrontLabel = () => isReversed ? 'Ý nghĩa' : (contentType === 'kanji' ? 'Kanji' : 'Từ vựng');
-  const getBackLabel = () => isReversed ? (contentType === 'kanji' ? 'Kanji' : 'Từ vựng') : 'Ý nghĩa';
+function TestSetup({ sets, kanjiSets, contentType, setContentType, selectedSetId, setSelectedSetId, questionCount, setQuestionCount, poolSize, questionFormat, setQuestionFormat, isReversed, setIsReversed, kanjiFront, setKanjiFront, kanjiBack, setKanjiBack, generateTest }) {
+  const getFrontLabel = () => {
+    if (contentType === 'kanji') {
+      const map = { kanji: 'Hán tự', hanviet: 'Hán Việt', hiragana: 'Phiên âm', meaning: 'Ý nghĩa' };
+      return map[kanjiFront];
+    }
+    return isReversed ? 'Ý nghĩa' : 'Từ vựng';
+  };
+  
+  const getBackLabel = () => {
+    if (contentType === 'kanji') {
+      const map = { kanji: 'Hán tự', hanviet: 'Hán Việt', hiragana: 'Phiên âm', meaning: 'Ý nghĩa' };
+      return map[kanjiBack];
+    }
+    return isReversed ? 'Từ vựng' : 'Ý nghĩa';
+  };
+
+  const handleSwap = () => {
+    if (contentType === 'kanji') {
+      setKanjiFront(kanjiBack);
+      setKanjiBack(kanjiFront);
+    } else {
+      setIsReversed(!isReversed);
+    }
+  };
 
   return (
     <div className="container mt-5 fade-in-slide" style={{ maxWidth: '650px' }}>
@@ -55,7 +77,16 @@ function TestSetup({ sets, kanjiSets, contentType, setContentType, selectedSetId
         <div className="d-flex align-items-center justify-content-between bg-light p-3 rounded-4 border-0 mb-5 shadow-sm transition-all">
             <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
               <span className="text-muted small fw-bold d-block mb-1 text-truncate">HỆ THỐNG HỎI</span>
-              <span className="fw-bold fs-5 text-truncate d-block" style={{ color: '#8a2be2' }}>{getFrontLabel()}</span>
+              {contentType === 'kanji' ? (
+                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center mx-auto mt-1" style={{ color: '#8a2be2', maxWidth: '140px' }} value={kanjiFront} onChange={(e) => setKanjiFront(e.target.value)}>
+                    <option value="kanji" className="text-dark">Hán tự</option>
+                    <option value="hanviet" className="text-dark">Hán Việt</option>
+                    <option value="hiragana" className="text-dark">Phiên âm</option>
+                    <option value="meaning" className="text-dark">Ý nghĩa</option>
+                  </select>
+              ) : (
+                  <span className="fw-bold fs-5 text-truncate d-block mt-2" style={{ color: '#8a2be2' }}>{getFrontLabel()}</span>
+              )}
             </div>
             
             <div className="px-2 px-md-3" style={{ flexShrink: 0 }}>
@@ -63,7 +94,7 @@ function TestSetup({ sets, kanjiSets, contentType, setContentType, selectedSetId
                 type="button"
                 className="btn btn-warning rounded-circle shadow-sm fw-bold d-flex align-items-center justify-content-center transition-all hover-scale m-0" 
                 style={{width: '48px', height: '48px', fontSize: '1.2rem'}}
-                onClick={() => setIsReversed(!isReversed)}
+                onClick={handleSwap}
                 title="Đảo chiều câu hỏi"
               >
                 🔄
@@ -72,7 +103,16 @@ function TestSetup({ sets, kanjiSets, contentType, setContentType, selectedSetId
             
             <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
               <span className="text-muted small fw-bold d-block mb-1 text-truncate">BẠN TRẢ LỜI</span>
-              <span className="fw-bold text-success fs-5 text-truncate d-block">{getBackLabel()}</span>
+              {contentType === 'kanji' ? (
+                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center mx-auto mt-1 text-success" style={{ maxWidth: '140px' }} value={kanjiBack} onChange={(e) => setKanjiBack(e.target.value)}>
+                    <option value="kanji" className="text-dark">Hán tự</option>
+                    <option value="hanviet" className="text-dark">Hán Việt</option>
+                    <option value="hiragana" className="text-dark">Phiên âm</option>
+                    <option value="meaning" className="text-dark">Ý nghĩa</option>
+                  </select>
+              ) : (
+                  <span className="fw-bold text-success fs-5 text-truncate d-block mt-2">{getBackLabel()}</span>
+              )}
             </div>
           </div>
 

@@ -28,8 +28,19 @@ function FlashcardMode() {
   const [autoPlay, setAutoPlay] = useState(() => localStorage.getItem("flashcardAutoPlay") === "true");
   const [isSlideshow, setIsSlideshow] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
+  const [kanjiFront, setKanjiFront] = useState('kanji');
+  const [kanjiBack, setKanjiBack] = useState('meaning');
   
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleSwap = () => {
+    if (contentType === 'kanji') {
+      setKanjiFront(kanjiBack);
+      setKanjiBack(kanjiFront);
+    } else {
+      setIsReversed(!isReversed);
+    }
+  };
   const containerRef = useRef(null);
 
   // States dành cho tính năng Vuốt trên Mobile
@@ -205,7 +216,16 @@ function FlashcardMode() {
             <div className="d-flex align-items-center justify-content-between bg-light p-3 rounded-4 border-0 shadow-sm transition-all">
               <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
                 <span className="text-muted small fw-bold d-block mb-1 text-truncate">MẶT TRƯỚC</span>
-                <span className="fw-bold fs-5 text-truncate d-block" style={{ color: '#8a2be2' }}>{isReversed ? 'Ý nghĩa' : (contentType === 'kanji' ? 'Kanji' : 'Từ vựng')}</span>
+                {contentType === 'kanji' ? (
+                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center mx-auto mt-1" style={{ color: '#8a2be2', maxWidth: '140px' }} value={kanjiFront} onChange={(e) => setKanjiFront(e.target.value)}>
+                    <option value="kanji" className="text-dark">Hán tự</option>
+                    <option value="hanviet" className="text-dark">Hán Việt</option>
+                    <option value="hiragana" className="text-dark">Phiên âm</option>
+                    <option value="meaning" className="text-dark">Ý nghĩa</option>
+                  </select>
+                ) : (
+                  <span className="fw-bold fs-5 text-truncate d-block mt-2" style={{ color: '#8a2be2' }}>{isReversed ? 'Ý nghĩa' : 'Từ vựng'}</span>
+                )}
               </div>
               
               <div className="px-2 px-md-3" style={{ flexShrink: 0 }}>
@@ -213,7 +233,7 @@ function FlashcardMode() {
                   type="button"
                   className="btn btn-warning rounded-circle shadow-sm fw-bold d-flex align-items-center justify-content-center transition-all hover-scale m-0" 
                   style={{width: '48px', height: '48px', fontSize: '1.2rem'}}
-                  onClick={() => setIsReversed(!isReversed)}
+                  onClick={handleSwap}
                   title="Đảo chiều thẻ"
                 >
                   🔄
@@ -222,7 +242,16 @@ function FlashcardMode() {
               
               <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
                 <span className="text-muted small fw-bold d-block mb-1 text-truncate">MẶT SAU</span>
-                <span className="fw-bold text-success fs-5 text-truncate d-block">{isReversed ? (contentType === 'kanji' ? 'Kanji' : 'Từ vựng') : 'Ý nghĩa'}</span>
+                {contentType === 'kanji' ? (
+                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center mx-auto mt-1 text-success" style={{ maxWidth: '140px' }} value={kanjiBack} onChange={(e) => setKanjiBack(e.target.value)}>
+                    <option value="kanji" className="text-dark">Hán tự</option>
+                    <option value="hanviet" className="text-dark">Hán Việt</option>
+                    <option value="hiragana" className="text-dark">Phiên âm</option>
+                    <option value="meaning" className="text-dark">Ý nghĩa</option>
+                  </select>
+                ) : (
+                  <span className="fw-bold text-success fs-5 text-truncate d-block mt-2">{isReversed ? 'Từ vựng' : 'Ý nghĩa'}</span>
+                )}
               </div>
             </div>
           </div>
@@ -320,6 +349,8 @@ function FlashcardMode() {
           autoPlay={autoPlay} 
           contentType={contentType}
           isReversed={isReversed}
+          kanjiFront={kanjiFront}
+          kanjiBack={kanjiBack}
           onEdit={setEditingVocab}
           onSaveNote={(item) => {
             if (contentType === 'kanji') {

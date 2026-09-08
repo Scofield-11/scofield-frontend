@@ -19,6 +19,8 @@ function LearnMode() {
 
   const [isStarted, setIsStarted] = useState(false);
   const [isReversed, setIsReversed] = useState(false); 
+  const [kanjiFront, setKanjiFront] = useState('kanji');
+  const [kanjiBack, setKanjiBack] = useState('meaning');
   
   const [rounds, setRounds] = useState([]);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
@@ -80,17 +82,39 @@ function LearnMode() {
     };
   }, []);
 
-  const getFrontLabel = () => isReversed ? 'Ý nghĩa' : (contentType === 'kanji' ? 'Kanji' : 'Từ vựng');
-  const getBackLabel = () => isReversed ? (contentType === 'kanji' ? 'Kanji' : 'Từ vựng') : 'Ý nghĩa';
+  const getFrontLabel = () => {
+    if (contentType === 'kanji') {
+      const map = { kanji: 'Hán tự', hanviet: 'Hán Việt', hiragana: 'Phiên âm', meaning: 'Ý nghĩa' };
+      return map[kanjiFront];
+    }
+    return isReversed ? 'Ý nghĩa' : 'Từ vựng';
+  };
+
+  const getBackLabel = () => {
+    if (contentType === 'kanji') {
+      const map = { kanji: 'Hán tự', hanviet: 'Hán Việt', hiragana: 'Phiên âm', meaning: 'Ý nghĩa' };
+      return map[kanjiBack];
+    }
+    return isReversed ? 'Từ vựng' : 'Ý nghĩa';
+  };
 
   const getQuestionText = (vocab) => {
     if (!vocab) return "";
-    return isReversed ? vocab.meaning : (contentType === 'kanji' ? vocab.kanji : vocab.word);
+    return contentType === 'kanji' ? vocab[kanjiFront] : (isReversed ? vocab.meaning : vocab.word);
   };
 
   const getAnswerText = (vocab) => {
     if (!vocab) return "";
-    return isReversed ? (contentType === 'kanji' ? vocab.kanji : vocab.word) : vocab.meaning;
+    return contentType === 'kanji' ? vocab[kanjiBack] : (isReversed ? vocab.word : vocab.meaning);
+  };
+
+  const handleSwap = () => {
+    if (contentType === 'kanji') {
+      setKanjiFront(kanjiBack);
+      setKanjiBack(kanjiFront);
+    } else {
+      setIsReversed(!isReversed);
+    }
   };
 
   const updateSRS = async (vocabId, isCorrect) => {
@@ -157,11 +181,11 @@ function LearnMode() {
 
   const generateOptions = (currentWord, allData) => {
     if (!currentWord) return;
-    const currentText = contentType === 'kanji' ? currentWord.kanji : currentWord.word;
+    const currentText = contentType === 'kanji' ? currentWord[kanjiBack] : currentWord.word;
 
     const scoredAnswers = allData.filter(v => v.id !== currentWord.id).map(v => {
       let score = 0;
-      const vText = contentType === 'kanji' ? v.kanji : v.word;
+      const vText = contentType === 'kanji' ? v[kanjiBack] : v.word;
       if (currentText && vText) {
         currentText.split('').forEach(c => { if (vText.includes(c)) score += 1; });
       }
@@ -301,7 +325,16 @@ function LearnMode() {
           <div className="d-flex align-items-center justify-content-between bg-light p-3 rounded-4 border-0 mb-5 shadow-sm transition-all">
             <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
               <span className="text-muted small fw-bold d-block mb-1 text-truncate">HỆ THỐNG HỎI</span>
-              <span className="fw-bold fs-5 text-truncate d-block" style={{ color: '#8a2be2' }}>{getFrontLabel()}</span>
+              {contentType === 'kanji' ? (
+                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center mx-auto mt-1" style={{ color: '#8a2be2', maxWidth: '140px' }} value={kanjiFront} onChange={(e) => setKanjiFront(e.target.value)}>
+                    <option value="kanji" className="text-dark">Hán tự</option>
+                    <option value="hanviet" className="text-dark">Hán Việt</option>
+                    <option value="hiragana" className="text-dark">Phiên âm</option>
+                    <option value="meaning" className="text-dark">Ý nghĩa</option>
+                  </select>
+              ) : (
+                  <span className="fw-bold fs-5 text-truncate d-block mt-2" style={{ color: '#8a2be2' }}>{getFrontLabel()}</span>
+              )}
             </div>
             
             <div className="px-2 px-md-3" style={{ flexShrink: 0 }}>
@@ -309,7 +342,7 @@ function LearnMode() {
                 type="button"
                 className="btn btn-warning rounded-circle shadow-sm fw-bold d-flex align-items-center justify-content-center transition-all hover-scale m-0" 
                 style={{width: '48px', height: '48px', fontSize: '1.2rem'}}
-                onClick={() => setIsReversed(!isReversed)}
+                onClick={handleSwap}
                 title="Đảo chiều câu hỏi"
               >
                 🔄
@@ -318,7 +351,16 @@ function LearnMode() {
             
             <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
               <span className="text-muted small fw-bold d-block mb-1 text-truncate">BẠN TRẢ LỜI</span>
-              <span className="fw-bold text-success fs-5 text-truncate d-block">{getBackLabel()}</span>
+              {contentType === 'kanji' ? (
+                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center mx-auto mt-1 text-success" style={{ maxWidth: '140px' }} value={kanjiBack} onChange={(e) => setKanjiBack(e.target.value)}>
+                    <option value="kanji" className="text-dark">Hán tự</option>
+                    <option value="hanviet" className="text-dark">Hán Việt</option>
+                    <option value="hiragana" className="text-dark">Phiên âm</option>
+                    <option value="meaning" className="text-dark">Ý nghĩa</option>
+                  </select>
+              ) : (
+                  <span className="fw-bold text-success fs-5 text-truncate d-block mt-2">{getBackLabel()}</span>
+              )}
             </div>
           </div>
 

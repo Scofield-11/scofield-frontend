@@ -25,6 +25,8 @@ function TestMode() {
   const [questionFormat, setQuestionFormat] = useState('choice'); 
   
   const [isReversed, setIsReversed] = useState(false); 
+  const [kanjiFront, setKanjiFront] = useState('kanji');
+  const [kanjiBack, setKanjiBack] = useState('meaning');
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
@@ -157,12 +159,12 @@ function TestMode() {
 
   const getQuestionText = (vocab) => {
     if (!vocab) return "";
-    return isReversed ? vocab.meaning : (contentType === 'kanji' ? vocab.kanji : vocab.word);
+    return contentType === 'kanji' ? vocab[kanjiFront] : (isReversed ? vocab.meaning : vocab.word);
   };
 
   const getAnswerText = (vocab) => {
     if (!vocab) return "";
-    return isReversed ? (contentType === 'kanji' ? vocab.kanji : vocab.word) : vocab.meaning;
+    return contentType === 'kanji' ? vocab[kanjiBack] : (isReversed ? vocab.word : vocab.meaning);
   };
 
   const generateTest = () => {
@@ -195,11 +197,11 @@ function TestMode() {
       if (type === 'choice') {
         const maxSampleSize = Math.min(allData.length, 60);
         const sampleVocabs = [...allData].sort(() => 0.5 - Math.random()).slice(0, maxSampleSize);
-        const currentText = contentType === 'kanji' ? vocab.kanji : vocab.word;
+        const currentText = contentType === 'kanji' ? vocab[kanjiBack] : vocab.word;
 
         const scoredAnswers = sampleVocabs.filter(v => v.id !== vocab.id).map(v => {
             let itemScore = 0;
-            const vText = contentType === 'kanji' ? v.kanji : v.word;
+            const vText = contentType === 'kanji' ? v[kanjiBack] : v.word;
             if (currentText && vText) {
               currentText.split('').forEach(c => { if (vText.includes(c)) itemScore += 1; });
             }
@@ -395,6 +397,8 @@ function TestMode() {
           questionCount={questionCount} setQuestionCount={setQuestionCount} poolSize={poolSize}
           questionFormat={questionFormat} setQuestionFormat={setQuestionFormat}
           isReversed={isReversed} setIsReversed={setIsReversed}
+          kanjiFront={kanjiFront} setKanjiFront={setKanjiFront}
+          kanjiBack={kanjiBack} setKanjiBack={setKanjiBack}
           generateTest={generateTest}
         />
         <div className="container mb-5" style={{ maxWidth: '650px' }}>
