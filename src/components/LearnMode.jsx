@@ -80,9 +80,7 @@ function LearnMode() {
   }, []);
 
   const getSideLabel = (type, side) => {
-    if (type === 'word_meaning') return side === 'front' ? 'Từ vựng (Gốc)' : 'Ý nghĩa';
-    if (type === 'word_furigana') return side === 'front' ? 'Từ vựng (Gốc)' : 'Phiên âm';
-    if (type === 'furigana_meaning') return side === 'front' ? 'Phiên âm' : 'Ý nghĩa';
+    return side === 'front' ? 'Từ vựng' : 'Ý nghĩa';
   };
 
   const getFrontLabel = () => isReversed ? getSideLabel(pairType, 'back') : getSideLabel(pairType, 'front');
@@ -90,16 +88,12 @@ function LearnMode() {
 
   const getQuestionText = (vocab) => {
     if (!vocab) return "";
-    if (pairType === 'word_meaning') return isReversed ? vocab.meaning : vocab.word;
-    if (pairType === 'word_furigana') return isReversed ? (vocab.furigana || vocab.word) : vocab.word;
-    if (pairType === 'furigana_meaning') return isReversed ? vocab.meaning : (vocab.furigana || vocab.word);
+    return isReversed ? vocab.meaning : vocab.word;
   };
 
   const getAnswerText = (vocab) => {
     if (!vocab) return "";
-    if (pairType === 'word_meaning') return isReversed ? vocab.word : vocab.meaning;
-    if (pairType === 'word_furigana') return isReversed ? vocab.word : (vocab.furigana || vocab.word);
-    if (pairType === 'furigana_meaning') return isReversed ? (vocab.furigana || vocab.word) : vocab.meaning;
+    return isReversed ? vocab.word : vocab.meaning;
   };
 
   const updateSRS = async (vocabId, isCorrect) => {
@@ -284,7 +278,7 @@ function LearnMode() {
           <div className="mb-4">
             <label className="form-label fw-bold text-muted mb-3">2. Nội dung vắt óc:</label>
             <div className="row g-3">
-              <div className="col-12 col-md-4">
+              <div className="col-12 col-md-12">
                 <div 
                   className={`card h-100 border-2 shadow-sm transition-all rounded-4 ${pairType === 'word_meaning' ? 'border-primary bg-primary text-white' : 'border-light bg-white text-dark hover-bg-light'}`}
                   style={{cursor: 'pointer'}}
@@ -294,32 +288,6 @@ function LearnMode() {
                     <div className="display-6 mb-2">📖</div>
                     <h6 className="fw-bold mb-1">Dịch nghĩa</h6>
                     <small className={pairType === 'word_meaning' ? 'text-white-50' : 'text-muted'} style={{fontSize: '0.8rem'}}>Từ vựng ↔ Ý nghĩa</small>
-                  </div>
-                </div>
-              </div>
-              <div className="col-6 col-md-4">
-                <div 
-                  className={`card h-100 border-2 shadow-sm transition-all rounded-4 ${pairType === 'word_furigana' ? 'border-primary bg-primary text-white' : 'border-light bg-white text-dark hover-bg-light'}`}
-                  style={{cursor: 'pointer'}}
-                  onClick={() => { setPairType('word_furigana'); setIsReversed(false); }}
-                >
-                  <div className="card-body p-3 p-md-4 text-center">
-                    <div className="display-6 mb-2">🔤</div>
-                    <h6 className="fw-bold mb-1">Đọc Kanji</h6>
-                    <small className={pairType === 'word_furigana' ? 'text-white-50' : 'text-muted'} style={{fontSize: '0.8rem'}}>Từ vựng ↔ Phiên âm</small>
-                  </div>
-                </div>
-              </div>
-              <div className="col-6 col-md-4">
-                <div 
-                  className={`card h-100 border-2 shadow-sm transition-all rounded-4 ${pairType === 'furigana_meaning' ? 'border-primary bg-primary text-white' : 'border-light bg-white text-dark hover-bg-light'}`}
-                  style={{cursor: 'pointer'}}
-                  onClick={() => { setPairType('furigana_meaning'); setIsReversed(false); }}
-                >
-                  <div className="card-body p-3 p-md-4 text-center">
-                    <div className="display-6 mb-2">🗣️</div>
-                    <h6 className="fw-bold mb-1">Nghe Nói</h6>
-                    <small className={pairType === 'furigana_meaning' ? 'text-white-50' : 'text-muted'} style={{fontSize: '0.8rem'}}>Phiên âm ↔ Ý nghĩa</small>
                   </div>
                 </div>
               </div>

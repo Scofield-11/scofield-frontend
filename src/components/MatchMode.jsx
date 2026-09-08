@@ -120,9 +120,6 @@ function MatchMode() {
   }, [isFinished, gameMode, score, highScore, selectedSetId, pairType]);
 
   const getCardTexts = (vocab) => {
-    if (pairType === 'word_meaning') return [vocab.word, vocab.meaning];
-    if (pairType === 'word_furigana') return [vocab.word, vocab.furigana || vocab.word];
-    if (pairType === 'furigana_meaning') return [vocab.furigana || vocab.word, vocab.meaning];
     return [vocab.word, vocab.meaning];
   };
 

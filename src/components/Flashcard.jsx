@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { playSound } from '../utils/audio'; // Import bộ máy âm thanh
 
-function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', showFuriganaHint = true, onEdit, onSaveNote }) {
+function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', onEdit, onSaveNote }) {
   const [flipped, setFlipped] = useState(false);
 
   const handleOpenNote = (e) => {
@@ -18,7 +18,6 @@ function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', 
 
   const getText = (side) => {
     if (side === 'word') return vocab.word;
-    if (side === 'furigana') return vocab.furigana || vocab.word;
     return vocab.meaning;
   };
 
@@ -27,9 +26,6 @@ function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', 
   
   const frontLang = detectLanguage(frontText, frontSide);
   const backLang = detectLanguage(backText, backSide);
-
-  const showHintFront = showFuriganaHint && frontSide === 'word' && vocab.furigana;
-  const showHintBack = showFuriganaHint && backSide === 'word' && vocab.furigana;
 
   const speak = (text, lang) => {
     if ('speechSynthesis' in window && text) {
@@ -69,8 +65,7 @@ function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', 
             title="Lưu từ này vào sổ tay (Note)"
           >📓</button>
           
-          {showHintFront && <span className="text-muted fw-normal mb-1" style={{ fontSize: '1.1rem' }}>{vocab.furigana}</span>}
-          <span className={frontSide === 'furigana' ? 'text-primary' : ''}>{frontText}</span>
+          <span>{frontText}</span>
           
           <button 
             className="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle shadow-sm transition-all hover-bg-light hover-scale"
@@ -93,8 +88,7 @@ function Flashcard({ vocab, autoPlay, frontSide = 'word', backSide = 'meaning', 
             title="Sửa nhanh từ này"
           >✏️</button>
           
-          {showHintBack && <span className="text-light opacity-75 fw-normal mb-1" style={{ fontSize: '1.1rem' }}>{vocab.furigana}</span>}
-          <span className={backSide === 'furigana' ? 'text-warning' : ''}>{backText}</span>
+          <span>{backText}</span>
           
           <button 
             className="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle shadow-sm transition-all hover-scale"

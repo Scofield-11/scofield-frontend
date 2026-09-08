@@ -21,7 +21,7 @@ function SaveNoteModal({ vocab, sets, onClose, onSaveSuccess }) {
       if (selectedSetId === 'new') {
         if (!noteSetName.trim()) { toast.warning("Nhập tên học phần Note!"); setIsSaving(false); return; }
         // Tạo học phần mới và nạp luôn từ vựng này vào
-        const rawText = `${vocab.word} | ${vocab.furigana || ''} | ${vocab.meaning}`;
+        const rawText = `${vocab.word} | ${vocab.meaning}`;
         await api.post("/vocabularies/bulk-import", {
           title: noteSetName.trim(),
           raw_text: rawText,

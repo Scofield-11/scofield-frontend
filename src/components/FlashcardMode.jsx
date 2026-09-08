@@ -25,7 +25,6 @@ function FlashcardMode() {
 
   const [autoPlay, setAutoPlay] = useState(() => localStorage.getItem("flashcardAutoPlay") === "true");
   const [isSlideshow, setIsSlideshow] = useState(false);
-  const [showFuriganaHint, setShowFuriganaHint] = useState(true);
   const [frontSide, setFrontSide] = useState('word');
   const [backSide, setBackSide] = useState('meaning');
   
@@ -194,25 +193,16 @@ function FlashcardMode() {
             <div className="col-6">
               <label className="form-label fw-bold text-muted small">MẶT TRƯỚC HIỂN THỊ:</label>
               <select className="form-select bg-light border-0 fw-bold text-primary shadow-sm" style={{ borderRadius: '12px' }} value={frontSide} onChange={(e) => setFrontSide(e.target.value)}>
-                <option value="word">Từ vựng (Kanji/Gốc)</option>
-                <option value="furigana">Phiên âm (Hiragana/IPA)</option>
-                <option value="meaning">Ý nghĩa (Tiếng Việt)</option>
+                <option value="word">Từ vựng</option>
+                <option value="meaning">Ý nghĩa</option>
               </select>
             </div>
             <div className="col-6">
               <label className="form-label fw-bold text-muted small">MẶT SAU HIỂN THỊ:</label>
               <select className="form-select bg-light border-0 fw-bold text-primary shadow-sm" style={{ borderRadius: '12px' }} value={backSide} onChange={(e) => setBackSide(e.target.value)}>
-                <option value="meaning">Ý nghĩa (Tiếng Việt)</option>
-                <option value="furigana">Phiên âm (Hiragana/IPA)</option>
-                <option value="word">Từ vựng (Kanji/Gốc)</option>
+                <option value="meaning">Ý nghĩa</option>
+                <option value="word">Từ vựng</option>
               </select>
-            </div>
-          </div>
-
-          <div className="mb-5 d-flex flex-column gap-3">
-            <div className="form-check form-switch fs-6 d-flex align-items-center gap-3 bg-light p-3 rounded-4 border-0 shadow-sm">
-              <input className="form-check-input m-0 shadow-sm" type="checkbox" id="furiganaToggle" checked={showFuriganaHint} onChange={(e) => setShowFuriganaHint(e.target.checked)} style={{ cursor: 'pointer' }} />
-              <label className="form-check-label fw-bold text-dark m-0" htmlFor="furiganaToggle" style={{ cursor: 'pointer' }}>Hiển thị phiên âm nhỏ (Hint) trên mặt thẻ Từ vựng</label>
             </div>
           </div>
 
@@ -256,8 +246,7 @@ function FlashcardMode() {
           <div className="card border-0 shadow-lg rounded-4 p-4" style={{ width: '90%', maxWidth: '400px' }}>
             <h5 className="fw-bold mb-4" style={{ color: '#8a2be2' }}>✏️ Sửa nhanh thẻ</h5>
             <form onSubmit={handleQuickSave}>
-              <input type="text" className="form-control bg-light border-0 mb-3 fw-bold shadow-sm" value={editingVocab.word} onChange={e => setEditingVocab({...editingVocab, word: e.target.value})} placeholder="Từ vựng/Kanji" required />
-              <input type="text" className="form-control bg-light border-0 mb-3 shadow-sm" value={editingVocab.furigana || ''} onChange={e => setEditingVocab({...editingVocab, furigana: e.target.value})} placeholder="Phiên âm/Hiragana" />
+              <input type="text" className="form-control bg-light border-0 mb-3 fw-bold shadow-sm" value={editingVocab.word} onChange={e => setEditingVocab({...editingVocab, word: e.target.value})} placeholder="Từ vựng" required />
               <input type="text" className="form-control bg-light border-0 mb-4 shadow-sm" value={editingVocab.meaning} onChange={e => setEditingVocab({...editingVocab, meaning: e.target.value})} placeholder="Ý nghĩa" required />
               <div className="d-flex gap-2">
                 <button type="button" className="btn btn-secondary w-50 fw-bold rounded-3" onClick={() => setEditingVocab(null)}>Hủy</button>
@@ -299,7 +288,6 @@ function FlashcardMode() {
           autoPlay={autoPlay} 
           frontSide={frontSide}
           backSide={backSide}
-          showFuriganaHint={showFuriganaHint}
           onEdit={setEditingVocab}
           onSaveNote={setNoteModalVocab} 
         />

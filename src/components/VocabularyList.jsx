@@ -132,11 +132,9 @@ function VocabularyList() {
 
   const [editingVocabId, setEditingVocabId] = useState(null);
   const [editWord, setEditWord] = useState('');
-  const [editFurigana, setEditFurigana] = useState('');
   const [editMeaning, setEditMeaning] = useState('');
   const [addingToSetId, setAddingToSetId] = useState(null);
   const [newWord, setNewWord] = useState('');
-  const [newFurigana, setNewFurigana] = useState('');
   const [newMeaning, setNewMeaning] = useState('');
 
   const toggleSet = (setId) => {
@@ -200,25 +198,24 @@ function VocabularyList() {
     setAddingToSetId(null);
     setEditingVocabId(vocab.id);
     setEditWord(vocab.word);
-    setEditFurigana(vocab.furigana || '');
     setEditMeaning(vocab.meaning);
   };
 
   const handleSaveEdit = async (vocabId) => {
     try {
-      await api.put(`/vocabularies/${vocabId}`, { word: editWord, furigana: editFurigana || null, meaning: editMeaning });
+      await api.put(`/vocabularies/${vocabId}`, { word: editWord, meaning: editMeaning });
       setEditingVocabId(null); toast.success("Cập nhật thành công!"); fetchSets(false, true);
     } catch (error) { toast.error("Lỗi cập nhật"); }
   };
 
   const handleAddClick = (setId) => {
-    setEditingVocabId(null); setAddingToSetId(setId); setNewWord(''); setNewFurigana(''); setNewMeaning('');
+    setEditingVocabId(null); setAddingToSetId(setId); setNewWord(''); setNewMeaning('');
   };
 
   const handleSaveNew = async (setId) => {
     if (!newWord.trim() || !newMeaning.trim()) return toast.warning("Nhập đủ thông tin!");
     try {
-      await api.post('/vocabularies', { word: newWord.trim(), furigana: newFurigana.trim() || null, meaning: newMeaning.trim(), set_id: setId });
+      await api.post('/vocabularies', { word: newWord.trim(), meaning: newMeaning.trim(), set_id: setId });
       toast.success("Đã thêm từ vựng mới!"); setAddingToSetId(null); fetchSets(false, true);
     } catch (error) { toast.error("Lỗi thêm từ vựng!"); }
   };
@@ -477,13 +474,10 @@ function VocabularyList() {
                         <div key={vocab.id} className="list-group-item bg-white p-4 border-bottom border-light">
                           {editingVocabId === vocab.id ? (
                             <div className="row g-2 align-items-center">
-                              <div className="col-sm-4">
+                              <div className="col-sm-5">
                                 <input type="text" className="form-control bg-light border-0" value={editWord} onChange={(e) => setEditWord(e.target.value)} autoFocus placeholder="Thuật ngữ" />
                               </div>
-                              <div className="col-sm-3">
-                                <input type="text" className="form-control bg-light border-0" value={editFurigana} onChange={(e) => setEditFurigana(e.target.value)} placeholder="Phiên âm" />
-                              </div>
-                              <div className="col-sm-3">
+                              <div className="col-sm-5">
                                 <input type="text" className="form-control bg-light border-0" value={editMeaning} onChange={(e) => setEditMeaning(e.target.value)} placeholder="Định nghĩa" />
                               </div>
                               <div className="col-sm-2 text-end">
@@ -501,7 +495,6 @@ function VocabularyList() {
                                   title="Lưu vào Note"
                                 >📓</button>
                                 <div className="ms-1 text-truncate">
-                                  {vocab.furigana && <div className="text-muted fw-bold mb-1" style={{ fontSize: '0.9rem' }}>{vocab.furigana}</div>}
                                   <div className="fw-bold fs-5 text-dark">{highlightText(vocab.word, searchTerm)}</div>
                                 </div>
                               </div>
@@ -520,13 +513,10 @@ function VocabularyList() {
                       {addingToSetId === vocabSet.id ? (
                         <div className="list-group-item bg-white p-4 border-top border-primary border-2">
                           <div className="row g-2 align-items-center">
-                            <div className="col-sm-4">
+                            <div className="col-sm-5">
                               <input type="text" className="form-control bg-light border-0" value={newWord} onChange={(e) => setNewWord(e.target.value)} autoFocus placeholder="Từ vựng mới" />
                             </div>
-                            <div className="col-sm-3">
-                              <input type="text" className="form-control bg-light border-0" value={newFurigana} onChange={(e) => setNewFurigana(e.target.value)} placeholder="Phiên âm (Tùy chọn)" />
-                            </div>
-                            <div className="col-sm-3">
+                            <div className="col-sm-5">
                               <input type="text" className="form-control bg-light border-0" value={newMeaning} onChange={(e) => setNewMeaning(e.target.value)} placeholder="Định nghĩa" />
                             </div>
                             <div className="col-sm-2 text-end">
