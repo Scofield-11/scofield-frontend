@@ -11,6 +11,7 @@ import LearnMode from "./components/LearnMode";
 import TestMode from "./components/TestMode";
 import MatchMode from "./components/MatchMode";
 import ExamMode from './components/ExamMode';
+import KanjiDictionary from "./pages/KanjiDictionary"; // THÊM DÒNG NÀY
 import NotFound from "./pages/NotFound";
 import { VocabProvider } from "./context/VocabContext";
 
@@ -38,6 +39,7 @@ function AnimatedRoutes() {
         <Route path="/test" element={<PageWrapper><TestMode /></PageWrapper>} />
         <Route path="/match" element={<PageWrapper><MatchMode /></PageWrapper>} />
         <Route path="/exam" element={<PageWrapper><ExamMode /></PageWrapper>} />
+        <Route path="/kanji" element={<PageWrapper><KanjiDictionary /></PageWrapper>} /> {/* THÊM DÒNG NÀY */}
         <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
