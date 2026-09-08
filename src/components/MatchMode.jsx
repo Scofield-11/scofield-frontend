@@ -3,6 +3,7 @@ import { VocabContext } from '../context/VocabContext';
 import { toast } from 'react-toastify';
 import LoadingSkeleton from './LoadingSkeleton';
 import confetti from 'canvas-confetti';
+import SetSelector from './SetSelector';
 
 function MatchMode() {
   const { sets, allVocabs, loading, fetchSets, fetchAllVocabs } = useContext(VocabContext);
@@ -211,14 +212,6 @@ function MatchMode() {
   if (loading) return <LoadingSkeleton />;
 
   if (!isStarted) {
-    const validSets = sets.filter(s => !s.title.startsWith('_Thư mục:'));
-    const groupedSets = validSets.reduce((acc, set) => {
-      const folder = set.folder_path || '🏠 Thư mục gốc';
-      if (!acc[folder]) acc[folder] = [];
-      acc[folder].push(set);
-      return acc;
-    }, {});
-
     return (
       <div className="container mt-5 fade-in-slide" style={{ maxWidth: '500px' }}>
         <div className="card shadow-sm border-0 p-4 rounded-4">
@@ -232,14 +225,7 @@ function MatchMode() {
           </div>
           <div className="mb-3">
             <label className="form-label fw-bold text-muted">Chọn học phần:</label>
-            <select className="form-select form-select-lg bg-light border-0 fw-bold text-dark" value={selectedSetId} onChange={(e) => setSelectedSetId(e.target.value)}>
-              <option value="all">-- Tất cả từ vựng --</option>
-              {Object.entries(groupedSets).map(([folder, folderSets]) => (
-                <optgroup key={folder} label={folder}>
-                  {folderSets.map(s => <option key={s.id} value={s.id}>{s.title} ({s.vocabularies.length} từ)</option>)}
-                </optgroup>
-              ))}
-            </select>
+            <SetSelector sets={sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
           </div>
 
           <div className="mb-3">

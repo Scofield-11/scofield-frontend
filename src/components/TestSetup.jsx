@@ -1,14 +1,7 @@
 import React from 'react';
+import SetSelector from './SetSelector';
 
 function TestSetup({ sets, selectedSetId, setSelectedSetId, questionCount, setQuestionCount, poolSize, questionFormat, setQuestionFormat, pairType, setPairType, isReversed, setIsReversed, generateTest }) {
-  const validSets = sets.filter(s => !s.title.startsWith('_Thư mục:'));
-  const groupedSets = validSets.reduce((acc, set) => {
-    const folder = set.folder_path || '🏠 Thư mục gốc';
-    if (!acc[folder]) acc[folder] = [];
-    acc[folder].push(set);
-    return acc;
-  }, {});
-
   const getSideLabel = (type, side) => {
     if (type === 'word_meaning') return side === 'front' ? 'Từ vựng (Gốc)' : 'Ý nghĩa';
     if (type === 'word_furigana') return side === 'front' ? 'Từ vựng (Gốc)' : 'Phiên âm';
@@ -25,19 +18,7 @@ function TestSetup({ sets, selectedSetId, setSelectedSetId, questionCount, setQu
         
         <div className="mb-4">
           <label className="form-label fw-bold text-muted mb-2">1. Chọn học phần:</label>
-          <select 
-            className="form-select form-select-lg bg-light border-0 fw-bold text-dark shadow-sm" 
-            style={{ borderRadius: '12px', height: '56px' }}
-            value={selectedSetId} 
-            onChange={(e) => setSelectedSetId(e.target.value)}
-          >
-            <option value="all">-- Tất cả từ vựng --</option>
-            {Object.entries(groupedSets).map(([folder, folderSets]) => (
-              <optgroup key={folder} label={folder}>
-                {folderSets.map(s => <option key={s.id} value={s.id}>{s.title} ({s.vocabularies.length} từ)</option>)}
-              </optgroup>
-            ))}
-          </select>
+          <SetSelector sets={sets} selectedSetId={selectedSetId} setSelectedSetId={setSelectedSetId} />
         </div>
 
         <div className="row g-3 mb-4">
