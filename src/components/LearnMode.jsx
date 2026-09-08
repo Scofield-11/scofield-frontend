@@ -30,7 +30,6 @@ function LearnMode() {
   
   const [isShaking, setIsShaking] = useState(false);
   const [onlyDue, setOnlyDue] = useState(false); 
-  const [onlyStarred, setOnlyStarred] = useState(false); 
 
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0); 
@@ -135,11 +134,6 @@ function LearnMode() {
       const now = new Date();
       pool = pool.filter(v => v.next_review && new Date(v.next_review) <= now);
       if (pool.length === 0) return toast.success("Tuyệt vời! Không có từ vựng nào đến hạn.");
-    }
-
-    if (onlyStarred) {
-      pool = pool.filter(v => v.is_starred);
-      if (pool.length === 0) return toast.warning("Chưa có từ vựng được gắn sao!");
     }
 
     if (pool.length === 0) return toast.warning("Học phần này chưa có từ vựng phù hợp!");
@@ -350,10 +344,6 @@ function LearnMode() {
             <div className="form-check form-switch fs-6 d-flex align-items-center gap-3 bg-light p-3 rounded-4 border-0 shadow-sm">
               <input className="form-check-input m-0 shadow-sm" type="checkbox" id="srsToggle" checked={onlyDue} onChange={(e) => setOnlyDue(e.target.checked)} style={{ cursor: 'pointer' }} />
               <label className="form-check-label fw-bold text-dark m-0" htmlFor="srsToggle" style={{ cursor: 'pointer' }}>Chỉ ôn tập từ đến hạn (Cơ chế Spaced Repetition)</label>
-            </div>
-            <div className="form-check form-switch fs-6 d-flex align-items-center gap-3 bg-light p-3 rounded-4 border-0 shadow-sm mt-3">
-              <input className="form-check-input m-0 shadow-sm" type="checkbox" id="starredLearnToggle" checked={onlyStarred} onChange={(e) => setOnlyStarred(e.target.checked)} style={{ cursor: 'pointer' }} />
-              <label className="form-check-label fw-bold text-dark m-0" htmlFor="starredLearnToggle" style={{ cursor: 'pointer' }}>Chỉ học từ đã đánh dấu (⭐)</label>
             </div>
           </div>
 

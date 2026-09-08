@@ -1,6 +1,6 @@
 import React from 'react';
 
-function TestResult({ score, questions, onRestart, onCreateMistakeSet, onStarVocab }) {
+function TestResult({ score, questions, onRestart, onCreateMistakeSet, onSaveNote }) {
   const percent = Math.round((score.correct / score.total) * 100);
   const wrongCount = score.total - score.correct;
   
@@ -53,8 +53,8 @@ function TestResult({ score, questions, onRestart, onCreateMistakeSet, onStarVoc
                 {q.questionText}
               </h5>
               {!q.isCorrect && q.id && (
-                <button className="btn btn-sm btn-outline-warning fw-bold text-dark ms-3 text-nowrap d-print-none" onClick={() => onStarVocab(q.id)} title="Lưu vào yêu thích">
-                  ⭐ Lưu
+                <button className="btn btn-light rounded-circle shadow-sm border-0 fs-5 d-flex align-items-center justify-content-center transition-all hover-scale ms-3 d-print-none" style={{ width: '40px', height: '40px', color: '#8a2be2', flexShrink: 0 }} onClick={() => onSaveNote(q.id)} title="Lưu vào Note">
+                  📓
                 </button>
               )}
             </div>

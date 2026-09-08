@@ -6,6 +6,7 @@ import api from '../api/axiosConfig';
 import TestSetup from './TestSetup';
 import TestResult from './TestResult';
 import ExamHistoryTable from './ExamHistoryTable';
+import SaveNoteModal from './SaveNoteModal';
 
 function TestMode() {
   const { sets, allVocabs, loading, fetchSets, fetchAllVocabs } = useContext(VocabContext);
@@ -33,6 +34,7 @@ function TestMode() {
 
   const [history, setHistory] = useState([]);
   const [viewHistory, setViewHistory] = useState(null);
+  const [noteModalVocab, setNoteModalVocab] = useState(null);
 
   const fetchHistory = () => {
     const historyData = JSON.parse(localStorage.getItem('scofieldTestHistory') || '[]');
@@ -48,15 +50,6 @@ function TestMode() {
       localStorage.removeItem('scofieldTestHistory');
       setHistory([]);
       toast.success("Đã xóa lịch sử thành công!");
-    }
-  };
-
-  const handleStarVocab = async (vocabId) => {
-    try {
-      await api.put(`/vocabularies/${vocabId}/star`, { is_starred: true });
-      toast.success("⭐ Đã lưu từ vựng vào danh sách yêu thích!");
-    } catch (error) {
-      toast.error("Lỗi khi lưu sao từ vựng");
     }
   };
 
@@ -313,6 +306,7 @@ function TestMode() {
   if (viewHistory) {
     return (
       <div className="container mt-4 fade-in-slide" style={{ maxWidth: '800px' }}>
+        {noteModalVocab && <SaveNoteModal vocab={noteModalVocab} sets={sets} onClose={() => setNoteModalVocab(null)} onSaveSuccess={() => fetchSets(false, true)} />}
         <button className="btn btn-outline-secondary fw-bold rounded-pill mb-4 px-4 shadow-sm" onClick={() => setViewHistory(null)}>← Quay lại danh sách</button>
         <div className="alert alert-info shadow-sm border-0 mb-4 rounded-4 p-4">
           <h4 className="fw-bold mb-3 text-primary">{viewHistory.title}</h4>
@@ -332,8 +326,11 @@ function TestMode() {
                 <div className="d-flex justify-content-between align-items-start mb-3">
                   <h5 className="mb-0 text-dark fw-bold">{q.question}</h5>
                   {q.vocabId && (
-                    <button className="btn btn-sm btn-outline-warning fw-bold text-dark ms-3 text-nowrap" onClick={() => handleStarVocab(q.vocabId)} title="Lưu vào yêu thích">
-                      ⭐ Lưu
+                    <button className="btn btn-light rounded-circle shadow-sm border-0 fs-5 d-flex align-items-center justify-content-center transition-all hover-scale ms-3 text-nowrap" style={{ width: '40px', height: '40px', color: '#8a2be2', flexShrink: 0 }} onClick={() => {
+                      const vocab = allVocabs.find(v => v.id === q.vocabId);
+                      if (vocab) setNoteModalVocab(vocab);
+                    }} title="Lưu vào Note">
+                      📓
                     </button>
                   )}
                 </div>
@@ -385,6 +382,7 @@ function TestMode() {
   if (isTestFinished) {
     return (
       <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light mobile-fullscreen pt-4' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflowY: 'auto' } : {}}>
+        {noteModalVocab && <SaveNoteModal vocab={noteModalVocab} sets={sets} onClose={() => setNoteModalVocab(null)} onSaveSuccess={() => fetchSets(false, true)} />}
         <div className="d-flex justify-content-between align-items-center mx-auto mb-4 d-print-none" style={{ maxWidth: '800px' }}>
           <button className="btn btn-outline-secondary fw-bold rounded-pill shadow-sm px-4 hover-bg-light transition-all" onClick={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }}>
             ← Đóng kết quả
@@ -393,7 +391,10 @@ function TestMode() {
             {isFullscreen ? '↙️' : '⛶'}
           </button>
         </div>
-        <TestResult score={score} questions={questions} onRestart={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }} onCreateMistakeSet={handleCreateMistakeSet} onStarVocab={handleStarVocab} />
+        <TestResult score={score} questions={questions} onRestart={() => { setIsTestStarted(false); setIsTestFinished(false); window.scrollTo(0,0); }} onCreateMistakeSet={handleCreateMistakeSet} onSaveNote={(vocabId) => {
+          const vocab = allVocabs.find(v => v.id === vocabId);
+          if (vocab) setNoteModalVocab(vocab);
+        }} />
       </div>
     );
   }
