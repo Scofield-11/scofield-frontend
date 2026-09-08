@@ -190,22 +190,46 @@ function TestMode() {
       
       let options = [];
       if (type === 'choice') {
-        const scoredAnswers = allVocabs.filter(v => v.id !== vocab.id).map(v => {
+        const maxSampleSize = Math.min(allVocabs.length, 60);
+        const sampleVocabs = [...allVocabs].sort(() => 0.5 - Math.random()).slice(0, maxSampleSize);
+
+        const scoredAnswers = sampleVocabs.filter(v => v.id !== vocab.id).map(v => {
             let itemScore = 0;
             const targetChars = vocab.word.split('');
             targetChars.forEach(c => { if (v.word.includes(c)) itemScore += 1; });
-            return { ...v, itemScore: itemScore + Math.random() * 0.5 };
-          });
+            return { ...v, itemScore: itemScore + Math.random() * 1.5 }; 
+        });
           
         scoredAnswers.sort((a, b) => b.itemScore - a.itemScore);
         
         let wrongAnswers = [];
+        const normalizeStr = (text) => text.toLowerCase().replace(/[.\/#!$%\^&\*;:{}=\-_`~()]/g, "").split(',').map(s => s.trim()).filter(Boolean).sort().join(',');
+        
+        const normalizedCorrect = normalizeStr(correctAnswer);
+        const usedNormalizedAnswers = new Set([normalizedCorrect]); 
+        
         for (let i = 0; i < scoredAnswers.length; i++) {
-          const ansStr = getAnswerText(scoredAnswers[i]);
-          if (ansStr !== correctAnswer && !wrongAnswers.includes(ansStr)) {
-            wrongAnswers.push(ansStr);
+          const rawAnsStr = getAnswerText(scoredAnswers[i]);
+          const normalizedAns = normalizeStr(rawAnsStr);
+          
+          if (!usedNormalizedAnswers.has(normalizedAns) && normalizedAns !== "") {
+            wrongAnswers.push(rawAnsStr);
+            usedNormalizedAnswers.add(normalizedAns);
           }
           if (wrongAnswers.length === 3) break;
+        }
+
+        if (wrongAnswers.length < 3) {
+          const backupVocabs = allVocabs.sort(() => 0.5 - Math.random());
+          for (let i = 0; i < backupVocabs.length; i++) {
+            const rawAnsStr = getAnswerText(backupVocabs[i]);
+            const normalizedAns = normalizeStr(rawAnsStr);
+            if (!usedNormalizedAnswers.has(normalizedAns) && normalizedAns !== "") {
+              wrongAnswers.push(rawAnsStr);
+              usedNormalizedAnswers.add(normalizedAns);
+            }
+            if (wrongAnswers.length === 3) break;
+          }
         }
         
         options = [...wrongAnswers, correctAnswer].sort(() => 0.5 - Math.random());
