@@ -11,7 +11,7 @@ import ContentTypeSelector from './ContentTypeSelector';
 const CHUNK_SIZE = 4;
 
 function LearnMode() {
-  const { sets, allVocabs, kanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
+  const { sets, setSets, allVocabs, kanjiSets, setKanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
   const [contentType, setContentType] = useState('vocab');
   const [selectedSetId, setSelectedSetId] = useState('all');
 
@@ -137,16 +137,39 @@ function LearnMode() {
     }
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     let pool = [];
-    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
 
     if (selectedSetId === 'all') {
-      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
+      if (contentType === 'kanji') {
+        const fullKanjiSets = await Promise.all(kanjiSets.map(async (s) => {
+          if (s.kanjis) return s;
+          const res = await api.get(`/kanji-sets/${s.id}`);
+          return res.data;
+        }));
+        setKanjiSets(fullKanjiSets);
+        pool = fullKanjiSets.flatMap(s => s.kanjis || []);
+      } else {
+        pool = allVocabs;
+      }
     } else {
-      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
-      if (targetSet) pool = contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies;
+      if (contentType === 'kanji') {
+        let targetSet = kanjiSets.find(s => s.id === parseInt(selectedSetId));
+        if (targetSet && !targetSet.kanjis) {
+          const res = await api.get(`/kanji-sets/${targetSet.id}`);
+          targetSet = res.data;
+          setKanjiSets(prev => prev.map(s => s.id === targetSet.id ? targetSet : s));
+        }
+        pool = targetSet?.kanjis || [];
+      } else {
+        let targetSet = sets.find(s => s.id === parseInt(selectedSetId));
+        if (targetSet && !targetSet.vocabularies) {
+          const res = await api.get(`/sets/${targetSet.id}`);
+          targetSet = res.data;
+          setSets(prev => prev.map(s => s.id === targetSet.id ? targetSet : s));
+        }
+        pool = targetSet?.vocabularies || [];
+      }
     }
 
     if (onlyDue) {
@@ -322,26 +345,26 @@ function LearnMode() {
             </div>
           </div>
 
-          <div className="d-flex align-items-center justify-content-between bg-light p-3 rounded-4 border-0 mb-5 shadow-sm transition-all">
+          <div className="d-flex align-items-center justify-content-between bg-light p-4 rounded-4 shadow-sm mb-5">
             <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
-              <span className="text-muted small fw-bold d-block mb-1 text-truncate">HỆ THỐNG HỎI</span>
+              <span className="text-muted small fw-bold text-uppercase d-block mb-2 text-truncate">HỆ THỐNG HỎI</span>
               {contentType === 'kanji' ? (
-                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center mx-auto mt-1" style={{ color: '#8a2be2', maxWidth: '140px' }} value={kanjiFront} onChange={(e) => setKanjiFront(e.target.value)}>
+                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center text-primary mx-auto rounded-3 py-2" style={{ maxWidth: '160px' }} value={kanjiFront} onChange={(e) => setKanjiFront(e.target.value)}>
                     <option value="kanji" className="text-dark">Hán tự</option>
                     <option value="hanviet" className="text-dark">Hán Việt</option>
                     <option value="hiragana" className="text-dark">Phiên âm</option>
                     <option value="meaning" className="text-dark">Ý nghĩa</option>
                   </select>
               ) : (
-                  <span className="fw-bold fs-5 text-truncate d-block mt-2" style={{ color: '#8a2be2' }}>{getFrontLabel()}</span>
+                  <span className="d-inline-block bg-white border-0 fw-bold shadow-sm text-center text-primary mx-auto rounded-3 py-2 px-3" style={{ maxWidth: '160px', width: '100%' }}>{getFrontLabel()}</span>
               )}
             </div>
             
             <div className="px-2 px-md-3" style={{ flexShrink: 0 }}>
               <button 
                 type="button"
-                className="btn btn-warning rounded-circle shadow-sm fw-bold d-flex align-items-center justify-content-center transition-all hover-scale m-0" 
-                style={{width: '48px', height: '48px', fontSize: '1.2rem'}}
+                className="btn btn-warning rounded-4 shadow-sm fw-bold d-flex align-items-center justify-content-center m-0 hover-scale transition-all" 
+                style={{width: '52px', height: '52px', fontSize: '1.4rem'}}
                 onClick={handleSwap}
                 title="Đảo chiều câu hỏi"
               >
@@ -350,16 +373,16 @@ function LearnMode() {
             </div>
             
             <div className="text-center" style={{ flex: 1, minWidth: 0 }}>
-              <span className="text-muted small fw-bold d-block mb-1 text-truncate">BẠN TRẢ LỜI</span>
+              <span className="text-muted small fw-bold text-uppercase d-block mb-2 text-truncate">BẠN TRẢ LỜI</span>
               {contentType === 'kanji' ? (
-                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center mx-auto mt-1 text-success" style={{ maxWidth: '140px' }} value={kanjiBack} onChange={(e) => setKanjiBack(e.target.value)}>
+                  <select className="form-select bg-white border-0 fw-bold shadow-sm text-center text-success mx-auto rounded-3 py-2" style={{ maxWidth: '160px' }} value={kanjiBack} onChange={(e) => setKanjiBack(e.target.value)}>
                     <option value="kanji" className="text-dark">Hán tự</option>
                     <option value="hanviet" className="text-dark">Hán Việt</option>
                     <option value="hiragana" className="text-dark">Phiên âm</option>
                     <option value="meaning" className="text-dark">Ý nghĩa</option>
                   </select>
               ) : (
-                  <span className="fw-bold text-success fs-5 text-truncate d-block mt-2">{getBackLabel()}</span>
+                  <span className="d-inline-block bg-white border-0 fw-bold shadow-sm text-center text-success mx-auto rounded-3 py-2 px-3" style={{ maxWidth: '160px', width: '100%' }}>{getBackLabel()}</span>
               )}
             </div>
           </div>

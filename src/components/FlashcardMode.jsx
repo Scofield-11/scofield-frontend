@@ -11,11 +11,11 @@ import SetSelector from './SetSelector';
 import ContentTypeSelector from './ContentTypeSelector';
 
 function FlashcardMode() {
-  const { sets, kanjiSets, loading, fetchSets, fetchKanjiSets } = useContext(VocabContext);
+  const { sets, setSets, kanjiSets, setKanjiSets, allVocabs, loading, fetchSets, fetchKanjiSets, fetchAllVocabs } = useContext(VocabContext);
   const [contentType, setContentType] = useState('vocab');
   const [selectedSetId, setSelectedSetId] = useState('all');
 
-  useEffect(() => { fetchSets(); fetchKanjiSets(); }, [fetchSets, fetchKanjiSets]);
+  useEffect(() => { fetchSets(); fetchKanjiSets(); fetchAllVocabs(); }, [fetchSets, fetchKanjiSets, fetchAllVocabs]);
   
   const [vocabsToStudy, setVocabsToStudy] = useState([]);
   const [isStarted, setIsStarted] = useState(false);
@@ -51,16 +51,39 @@ function FlashcardMode() {
 
   const vibrate = (ms = 40) => { if (navigator.vibrate) navigator.vibrate(ms); };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     let pool = [];
-    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
 
     if (selectedSetId === 'all') {
-      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
+      if (contentType === 'kanji') {
+        const fullKanjiSets = await Promise.all(kanjiSets.map(async (s) => {
+          if (s.kanjis) return s;
+          const res = await api.get(`/kanji-sets/${s.id}`);
+          return res.data;
+        }));
+        setKanjiSets(fullKanjiSets);
+        pool = fullKanjiSets.flatMap(s => s.kanjis || []);
+      } else {
+        pool = allVocabs;
+      }
     } else {
-      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
-      if (targetSet) pool = contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies;
+      if (contentType === 'kanji') {
+        let targetSet = kanjiSets.find(s => s.id === parseInt(selectedSetId));
+        if (targetSet && !targetSet.kanjis) {
+          const res = await api.get(`/kanji-sets/${targetSet.id}`);
+          targetSet = res.data;
+          setKanjiSets(prev => prev.map(s => s.id === targetSet.id ? targetSet : s));
+        }
+        pool = targetSet?.kanjis || [];
+      } else {
+        let targetSet = sets.find(s => s.id === parseInt(selectedSetId));
+        if (targetSet && !targetSet.vocabularies) {
+          const res = await api.get(`/sets/${targetSet.id}`);
+          targetSet = res.data;
+          setSets(prev => prev.map(s => s.id === targetSet.id ? targetSet : s));
+        }
+        pool = targetSet?.vocabularies || [];
+      }
     }
 
     if (pool.length === 0) return toast.warning("Học phần này chưa có dữ liệu!");

@@ -80,7 +80,7 @@ export const VocabProvider = ({ children }) => {
   }, [hasFetchedKanjiSets]);
 
   return (
-    <VocabContext.Provider value={{ sets, allVocabs, kanjiSets, globalStats, fetchGlobalStats, loading, fetchSets, fetchAllVocabs, fetchKanjiSets, hasMore, studyProgress, setStudyProgress }}>
+    <VocabContext.Provider value={{ sets, setSets, allVocabs, kanjiSets, setKanjiSets, globalStats, fetchGlobalStats, loading, fetchSets, fetchAllVocabs, fetchKanjiSets, hasMore, studyProgress, setStudyProgress }}>
       {children}
     </VocabContext.Provider>
   );

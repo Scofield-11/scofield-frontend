@@ -9,7 +9,7 @@ import ExamHistoryTable from './ExamHistoryTable';
 import SaveNoteModal from './SaveNoteModal';
 
 function TestMode() {
-  const { sets, allVocabs, kanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
+  const { sets, setSets, allVocabs, kanjiSets, setKanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
   const [contentType, setContentType] = useState('vocab');
   const [selectedSetId, setSelectedSetId] = useState('all');
 
@@ -141,21 +141,22 @@ function TestMode() {
   }, [isTestStarted, isTestFinished]);
 
   useEffect(() => {
-    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
-    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
-    
+    let size = 0;
     if (selectedSetId === 'all') {
-      setPoolSize(allData.length);
-      if (allData.length < questionCount) setQuestionCount(allData.length || 10);
+      size = contentType === 'kanji' ? kanjiSets.reduce((sum, s) => sum + (s.vocab_count || 0), 0) : allVocabs.length;
     } else {
-      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
-      if (targetSet) {
-        const targetLen = contentType === 'kanji' ? targetSet.kanjis.length : targetSet.vocabularies.length;
-        setPoolSize(targetLen);
-        if (targetLen < questionCount) setQuestionCount(targetLen);
+      if (contentType === 'kanji') {
+        const targetSet = kanjiSets.find(s => s.id === parseInt(selectedSetId));
+        size = targetSet ? (targetSet.vocab_count || 0) : 0;
+      } else {
+        const targetSet = sets.find(s => s.id === parseInt(selectedSetId));
+        size = targetSet ? (targetSet.vocab_count || 0) : 0;
       }
     }
-  }, [selectedSetId, allVocabs, sets, kanjiSets, contentType, questionCount]);
+    setPoolSize(size);
+    // Luôn set questionCount bằng tổng số từ vựng (size) mỗi khi đổi học phần
+    setQuestionCount(size || 10);
+  }, [selectedSetId, allVocabs, sets, kanjiSets, contentType]);
 
   const getQuestionText = (vocab) => {
     if (!vocab) return "";
@@ -167,18 +168,45 @@ function TestMode() {
     return contentType === 'kanji' ? vocab[kanjiBack] : (isReversed ? vocab.word : vocab.meaning);
   };
 
-  const generateTest = () => {
+  const generateTest = async () => {
     vibrate(40);
     let pool = [];
-    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
-    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
+    let allData = [];
 
     if (selectedSetId === 'all') {
-      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
+      if (contentType === 'kanji') {
+        const fullKanjiSets = await Promise.all(kanjiSets.map(async (s) => {
+          if (s.kanjis) return s;
+          const res = await api.get(`/kanji-sets/${s.id}`);
+          return res.data;
+        }));
+        setKanjiSets(fullKanjiSets);
+        pool = fullKanjiSets.flatMap(s => s.kanjis || []);
+        allData = pool;
+      } else {
+        pool = allVocabs;
+        allData = allVocabs;
+      }
     } else {
-      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
-      if (targetSet) pool = contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies;
+      if (contentType === 'kanji') {
+        let targetSet = kanjiSets.find(s => s.id === parseInt(selectedSetId));
+        if (targetSet && !targetSet.kanjis) {
+          const res = await api.get(`/kanji-sets/${targetSet.id}`);
+          targetSet = res.data;
+          setKanjiSets(prev => prev.map(s => s.id === targetSet.id ? targetSet : s));
+        }
+        pool = targetSet?.kanjis || [];
+        allData = kanjiSets.flatMap(s => s.kanjis || []); 
+      } else {
+        let targetSet = sets.find(s => s.id === parseInt(selectedSetId));
+        if (targetSet && !targetSet.vocabularies) {
+          const res = await api.get(`/sets/${targetSet.id}`);
+          targetSet = res.data;
+          setSets(prev => prev.map(s => s.id === targetSet.id ? targetSet : s));
+        }
+        pool = targetSet?.vocabularies || [];
+        allData = allVocabs;
+      }
     }
 
     if (pool.length === 0) return toast.warning("Học phần này chưa có dữ liệu nào!");

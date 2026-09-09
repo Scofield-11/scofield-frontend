@@ -7,7 +7,7 @@ import SetSelector from './SetSelector';
 import ContentTypeSelector from './ContentTypeSelector';
 
 function MatchMode() {
-  const { sets, allVocabs, kanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
+  const { sets, setSets, allVocabs, kanjiSets, setKanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
   const [contentType, setContentType] = useState('vocab');
   const [selectedSetId, setSelectedSetId] = useState('all');
   const [difficulty, setDifficulty] = useState(6); 
@@ -127,16 +127,39 @@ function MatchMode() {
     return [vocab.word, vocab.meaning];
   };
 
-  const generateCards = () => {
+  const generateCards = async () => {
     let pool = [];
-    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
     
     if (selectedSetId === 'all') {
-      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
+      if (contentType === 'kanji') {
+        const fullKanjiSets = await Promise.all(kanjiSets.map(async (s) => {
+          if (s.kanjis) return s;
+          const res = await api.get(`/kanji-sets/${s.id}`);
+          return res.data;
+        }));
+        setKanjiSets(fullKanjiSets);
+        pool = fullKanjiSets.flatMap(s => s.kanjis || []);
+      } else {
+        pool = allVocabs;
+      }
     } else {
-      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
-      pool = targetSet ? (contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies) : [];
+      if (contentType === 'kanji') {
+        let targetSet = kanjiSets.find(s => s.id === parseInt(selectedSetId));
+        if (targetSet && !targetSet.kanjis) {
+          const res = await api.get(`/kanji-sets/${targetSet.id}`);
+          targetSet = res.data;
+          setKanjiSets(prev => prev.map(s => s.id === targetSet.id ? targetSet : s));
+        }
+        pool = targetSet?.kanjis || [];
+      } else {
+        let targetSet = sets.find(s => s.id === parseInt(selectedSetId));
+        if (targetSet && !targetSet.vocabularies) {
+          const res = await api.get(`/sets/${targetSet.id}`);
+          targetSet = res.data;
+          setSets(prev => prev.map(s => s.id === targetSet.id ? targetSet : s));
+        }
+        pool = targetSet?.vocabularies || [];
+      }
     }
 
     const actualDifficulty = Math.min(difficulty, pool.length);
@@ -163,21 +186,23 @@ function MatchMode() {
     setMatchedIds([]);
   };
 
-  const startGame = () => {
-    let pool = [];
-    const activeSets = contentType === 'kanji' ? kanjiSets : sets;
-    
+  const startGame = async () => {
+    let poolLength = 0;
     if (selectedSetId === 'all') {
-      const validSets = activeSets.filter(s => !s.title.startsWith('_Thư mục:'));
-      pool = validSets.flatMap(s => contentType === 'kanji' ? s.kanjis : s.vocabularies);
+      poolLength = contentType === 'kanji' ? kanjiSets.reduce((sum, s) => sum + (s.vocab_count || 0), 0) : allVocabs.length;
     } else {
-      const targetSet = activeSets.find(s => s.id === parseInt(selectedSetId));
-      pool = targetSet ? (contentType === 'kanji' ? targetSet.kanjis : targetSet.vocabularies) : [];
+      if (contentType === 'kanji') {
+        const targetSet = kanjiSets.find(s => s.id === parseInt(selectedSetId));
+        poolLength = targetSet ? (targetSet.vocab_count || 0) : 0;
+      } else {
+        const targetSet = sets.find(s => s.id === parseInt(selectedSetId));
+        poolLength = targetSet ? (targetSet.vocab_count || 0) : 0;
+      }
     }
 
-    if (pool.length < 2) return toast.warning(`Cần ít nhất 2 thẻ để chơi!`);
+    if (poolLength < 2) return toast.warning(`Cần ít nhất 2 thẻ để chơi!`);
 
-    generateCards();
+    await generateCards();
     setSelectedCards([]);
     setErrorCards([]);
     setIsAnimating(false);

@@ -6,7 +6,6 @@ import LoadingSkeleton from '../components/LoadingSkeleton';
 
 function KanjiDictionary() {
   const [kanjiSets, setKanjiSets] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   
   const [isImportExpanded, setIsImportExpanded] = useState(false);
@@ -81,23 +80,25 @@ function KanjiDictionary() {
     fetchKanjiSets();
   };
 
-  const toggleSet = (setId) => {
-    setExpandedSets(prev => ({ ...prev, [setId]: !prev[setId] }));
+  const toggleSet = async (setId) => {
+    if (expandedSets[setId]) {
+      setExpandedSets(prev => ({ ...prev, [setId]: false }));
+      return;
+    }
+    
+    const targetSet = kanjiSets.find(s => s.id === setId);
+    if (targetSet && !targetSet.kanjis) {
+      try {
+        const res = await api.get(`/kanji-sets/${setId}`);
+        setKanjiSets(prev => prev.map(s => s.id === setId ? { ...s, kanjis: res.data.kanjis } : s));
+      } catch (error) {
+        toast.error("Lỗi tải chi tiết Kanji!");
+      }
+    }
+    setExpandedSets(prev => ({ ...prev, [setId]: true }));
   };
 
-  const isSearching = searchTerm.trim().length > 0;
-
-  const displaySets = kanjiSets.map(set => {
-    if (!isSearching) return set;
-    
-    const filteredKanjis = set.kanjis.filter(k => 
-      (k.kanji && k.kanji.includes(searchTerm)) || 
-      (k.hanviet && k.hanviet.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (k.hiragana && k.hiragana.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (k.meaning && k.meaning.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    return { ...set, kanjis: filteredKanjis };
-  }).filter(set => set.kanjis.length > 0);
+  const displaySets = kanjiSets;
 
   if (isLoading) return <LoadingSkeleton />;
 
@@ -156,19 +157,9 @@ function KanjiDictionary() {
         )}
       </div>
 
-      {/* THANH TÌM KIẾM CHỈ ĐỊNH */}
+      {/* TÊU ĐỀ */}
       <div className="card shadow-sm border-0 rounded-4 bg-primary text-white mb-4 p-4 fade-in-slide">
-        <h3 className="fw-bold mb-4">Kanji ⛩️</h3>
-        <div className="position-relative">
-          <span className="position-absolute top-50 translate-middle-y ms-3 fs-5">🔍</span>
-          <input 
-            type="text" 
-            className="form-control form-control-lg border-0 shadow-sm rounded-pill fw-bold text-dark w-100" 
-            placeholder="Tìm theo chữ Hán, Hán Việt, cách đọc, nghĩa..." 
-            value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ paddingLeft: '3.5rem', height: '56px' }}
-          />
-        </div>
+        <h3 className="fw-bold m-0">Kanji ⛩️</h3>
       </div>
 
       {/* DANH SÁCH CÁC HỌC PHẦN (ACCORDION) */}
@@ -177,7 +168,7 @@ function KanjiDictionary() {
           <div className="text-center text-muted mt-5 fw-bold fs-5">Không tìm thấy kết quả phù hợp.</div>
         ) : (
           displaySets.map((set) => {
-            const isExpanded = isSearching || expandedSets[set.id];
+            const isExpanded = expandedSets[set.id];
 
             return (
               <div key={set.id} className="card shadow-sm border-0 rounded-4 overflow-hidden">
@@ -189,7 +180,7 @@ function KanjiDictionary() {
                 >
                   <div>
                     <h5 className="mb-0 fw-bold text-dark d-inline-block me-3">{set.title}</h5>
-                    <span className="badge bg-light text-primary border px-2 py-1 fs-6">{set.kanjis.length} từ</span>
+                    <span className="badge bg-light text-primary border px-2 py-1 fs-6">{set.vocab_count} từ</span>
                   </div>
                   <div className="d-flex align-items-center gap-2">
                     <button className="btn btn-sm btn-light text-danger fw-bold border-0 px-3 py-2" onClick={(e) => handleDeleteSet(e, set.id, set.title)}>🗑️ Xóa</button>
@@ -202,7 +193,7 @@ function KanjiDictionary() {
                 {isExpanded && (
                   <div className="card-body p-0 border-top bg-light fade-in">
                     <div className="list-group list-group-flush rounded-bottom-4">
-                      {set.kanjis.map((item) => (
+                      {set.kanjis?.map((item) => (
                         <div key={item.id} className="list-group-item bg-white p-4 border-bottom border-light hover-bg-light transition-all position-relative">
                           <div className="row align-items-center g-3 text-center text-md-start">
                             

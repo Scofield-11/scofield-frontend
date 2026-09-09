@@ -61,7 +61,7 @@ function SaveNoteModal({ vocab, sets, onClose, onSaveSuccess }) {
           <div className="mb-3">
             <label className="form-label fw-bold text-muted small">Chọn học phần Note:</label>
             <select className="form-select bg-light border-0 fw-bold shadow-sm" value={selectedSetId} onChange={e => setSelectedSetId(e.target.value)}>
-              {noteSets.map(s => <option key={s.id} value={s.id}>{s.title} ({s.vocabularies.length} từ)</option>)}
+              {noteSets.map(s => <option key={s.id} value={s.id}>{s.title} ({s.vocab_count || 0} từ)</option>)}
               <option value="new">+ Tạo học phần Note mới</option>
             </select>
           </div>
