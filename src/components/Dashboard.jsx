@@ -11,44 +11,58 @@ function Dashboard() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  const history = JSON.parse(localStorage.getItem('scofieldTestHistory') || '[]');
-  
-  const activeDates = [...new Set(history.map(item => {
-    const match = item.date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    return match ? `${match[3]}-${match[2]}-${match[1]}` : null;
-  }).filter(Boolean))].sort((a, b) => new Date(b) - new Date(a));
+  const [todayTests, setTodayTests] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
-  const today = new Date();
-  const tzTodayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  
-  const todayTests = history.filter(item => {
-    const match = item.date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    return match && `${match[3]}-${match[2]}-${match[1]}` === tzTodayStr;
-  }).length;
+  useEffect(() => {
+    // Lấy 100 lịch sử gần nhất để tính toán chuỗi liên tiếp và bài làm hôm nay
+    api.get('/test-history?skip=0&limit=100')
+      .then(res => {
+        const history = res.data;
+        
+        const activeDates = [...new Set(history.map(item => {
+          const match = item.date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+          return match ? `${match[3]}-${match[2]}-${match[1]}` : null;
+        }).filter(Boolean))].sort((a, b) => new Date(b) - new Date(a));
 
-  let currentStreak = 0;
-  let checkDate = new Date();
-  if (activeDates.includes(tzTodayStr)) {
-    currentStreak = 1;
-    checkDate.setDate(checkDate.getDate() - 1);
-  } else {
-    const yest = new Date();
-    yest.setDate(yest.getDate() - 1);
-    const yestStr = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`;
-    if (activeDates.includes(yestStr)) {
-      checkDate = yest;
-    }
-  }
+        const today = new Date();
+        const tzTodayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        
+        const tTests = history.filter(item => {
+          const match = item.date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+          return match && `${match[3]}-${match[2]}-${match[1]}` === tzTodayStr;
+        }).length;
+        
+        setTodayTests(tTests);
 
-  while(true) {
-    const dStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth()+1).padStart(2,'0')}-${String(checkDate.getDate()).padStart(2,'0')}`;
-    if (activeDates.includes(dStr)) {
-      if (dStr !== tzTodayStr) currentStreak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
+        let streak = 0;
+        let checkDate = new Date();
+        if (activeDates.includes(tzTodayStr)) {
+          streak = 1;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          const yest = new Date();
+          yest.setDate(yest.getDate() - 1);
+          const yestStr = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`;
+          if (activeDates.includes(yestStr)) {
+            checkDate = yest;
+          }
+        }
+
+        while(true) {
+          const dStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth()+1).padStart(2,'0')}-${String(checkDate.getDate()).padStart(2,'0')}`;
+          if (activeDates.includes(dStr)) {
+            if (dStr !== tzTodayStr) streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else {
+            break;
+          }
+        }
+        
+        setCurrentStreak(streak);
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {

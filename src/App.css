@@ -181,18 +181,19 @@ body {
 @media (max-width: 991px) {
   .main-content {
     margin-left: 0;
-    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 20px);
   }
   
   .app-navigation {
     width: 100%;
-    height: var(--bottom-nav-height);
+    height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
     top: auto;
     bottom: 0;
     flex-direction: row;
     justify-content: space-around;
     align-items: center;
     padding: 0 10px;
+    padding-bottom: env(safe-area-inset-bottom);
     border-radius: 24px 24px 0 0;
     box-shadow: 0 -4px 25px rgba(0,0,0,0.15);
     background-color: rgba(134, 59, 255, 0.98);
@@ -373,6 +374,25 @@ body {
 @keyframes shimmerLoading {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* --- PSEUDO-FULLSCREEN CHO MOBILE --- */
+/* --- TỐI ƯU HIỂN THỊ MOBILE --- */
+@media (max-width: 768px) {
+  /* Chống iOS tự động Zoom khi bấm vào ô nhập liệu */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  
+  /* Ẩn thanh cuộn ngang trên giao diện Mobile nhưng vẫn cho phép vuốt */
+  .table-responsive::-webkit-scrollbar,
+  .overflow-auto::-webkit-scrollbar {
+    display: none;
+  }
+  .table-responsive, .overflow-auto {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* --- PSEUDO-FULLSCREEN CHO MOBILE --- */
