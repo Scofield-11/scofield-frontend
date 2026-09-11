@@ -7,6 +7,8 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation; /* Khóa tính năng double-tap zoom */
+  overscroll-behavior-y: none; /* Loại bỏ hiệu ứng nảy trang gây xô lệch cuộn */
 }
 
 
