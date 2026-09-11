@@ -37,21 +37,39 @@ function TestMode() {
   const [history, setHistory] = useState([]);
   const [viewHistory, setViewHistory] = useState(null);
   const [noteModalVocab, setNoteModalVocab] = useState(null);
+  const [historyPage, setHistoryPage] = useState(0);
+  const [hasMoreHistory, setHasMoreHistory] = useState(true);
 
-  const fetchHistory = () => {
-    const historyData = JSON.parse(localStorage.getItem('scofieldTestHistory') || '[]');
-    setHistory(historyData);
+  const fetchHistory = async (reset = false) => {
+    try {
+      const skip = reset ? 0 : historyPage * 10;
+      const res = await api.get(`/test-history?skip=${skip}&limit=10`);
+      if (reset) {
+        setHistory(res.data);
+        setHistoryPage(1);
+      } else {
+        setHistory(prev => [...prev, ...res.data]);
+        setHistoryPage(prev => prev + 1);
+      }
+      setHasMoreHistory(res.data.length === 10);
+    } catch (error) {
+      toast.error("Lỗi tải lịch sử Test!");
+    }
   };
 
   useEffect(() => {
-    fetchHistory();
+    fetchHistory(true);
   }, []);
 
-  const handleClearHistory = () => {
+  const handleClearHistory = async () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử Test?")) {
-      localStorage.removeItem('scofieldTestHistory');
-      setHistory([]);
-      toast.success("Đã xóa lịch sử thành công!");
+      try {
+        await api.delete('/test-history/all');
+        setHistory([]);
+        toast.success("Đã xóa lịch sử thành công!");
+      } catch (error) {
+        toast.error("Lỗi xóa lịch sử!");
+      }
     }
   };
 
@@ -320,22 +338,20 @@ function TestMode() {
 
     // LƯU LỊCH SỬ TEST
     const setName = selectedSetId === 'all' ? 'Tất cả từ vựng' : (sets.find(s => s.id === parseInt(selectedSetId))?.title || 'Học phần tùy chỉnh');
-    const newRecord = {
-      id: Date.now(),
+    const wrongDetails = gradedQuestions.filter(q => !q.isCorrect).map(q => ({
+      question: q.questionText,
+      correct_ans: q.correctAnswer,
+      user_ans: q.userAnswer,
+      vocabId: q.id 
+    }));
+    
+    api.post('/test-history', {
+      set_id: selectedSetId === 'all' ? null : parseInt(selectedSetId),
       title: `Test: ${setName}`,
       score: correctCount,
       total: gradedQuestions.length,
-      date: new Date().toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
-      wrongDetails: gradedQuestions.filter(q => !q.isCorrect).map(q => ({
-        question: q.questionText,
-        correct_ans: q.correctAnswer,
-        user_ans: q.userAnswer,
-        vocabId: q.id 
-      }))
-    };
-    const currentHistory = JSON.parse(localStorage.getItem('scofieldTestHistory') || '[]');
-    localStorage.setItem('scofieldTestHistory', JSON.stringify([newRecord, ...currentHistory]));
-    fetchHistory();
+      wrong_details: wrongDetails
+    }).then(() => fetchHistory(true)).catch(() => toast.error("Lỗi lưu lịch sử!"));
     
     const ratio = correctCount / gradedQuestions.length;
     if (ratio >= 0.8) {
@@ -430,7 +446,7 @@ function TestMode() {
           generateTest={generateTest}
         />
         <div className="container mb-5" style={{ maxWidth: '650px' }}>
-          <ExamHistoryTable history={history} setViewHistory={setViewHistory} handleClearHistory={handleClearHistory} />
+          <ExamHistoryTable history={history} setViewHistory={setViewHistory} handleClearHistory={handleClearHistory} onLoadMore={() => fetchHistory(false)} hasMore={hasMoreHistory} />
         </div>
       </>
     );

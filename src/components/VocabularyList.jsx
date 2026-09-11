@@ -31,6 +31,14 @@ function VocabularyList() {
   useEffect(() => { localStorage.setItem('scofieldSortOption', sortOption); }, [sortOption]);
   
   const [noteModalVocab, setNoteModalVocab] = useState(null);
+  const [testHistories, setTestHistories] = useState([]);
+
+  // Gọi API lấy lịch sử test để tính toán % tiến độ khi component render
+  useEffect(() => {
+    api.get('/test-history?skip=0&limit=50')
+      .then(res => setTestHistories(res.data))
+      .catch(console.error);
+  }, []);
 
   // --- CẤU HÌNH HIỆU ỨNG MOTION ---
   const containerVariants = {
@@ -51,12 +59,11 @@ function VocabularyList() {
     return <span>{parts.map((part, i) => part.toLowerCase() === highlight.toLowerCase() ? <mark key={i} className="bg-warning px-1 rounded">{part}</mark> : part)}</span>;
   };
 
-  const calculateProgress = (setTitle, vocabCount) => {
+  const calculateProgress = (setId, vocabCount) => {
     if (!vocabCount || vocabCount === 0) return 0;
-    const history = JSON.parse(localStorage.getItem('scofieldTestHistory') || '[]');
-    const targetTitle = `Test: ${setTitle}`;
     
-    const validTests = history.filter(h => h.title === targetTitle && h.total === vocabCount);
+    // Tìm các bài test tương ứng với set_id này và có tổng số câu hỏi khớp với số từ vựng hiện tại
+    const validTests = testHistories.filter(h => h.setId === setId && h.total === vocabCount);
     if (validTests.length === 0) return 0;
     
     const maxScore = Math.max(...validTests.map(h => h.score));
@@ -102,7 +109,7 @@ function VocabularyList() {
       else if (sortOption === 'oldest') filteredVocabs.sort((a, b) => a.id - b.id);
       else filteredVocabs.sort((a, b) => b.id - a.id);
 
-      return { ...set, vocabularies: filteredVocabs, progress: calculateProgress(set.title, set.vocab_count || filteredVocabs.length) };
+      return { ...set, vocabularies: filteredVocabs, progress: calculateProgress(set.id, set.vocab_count || filteredVocabs.length) };
     });
 
   displaySets.sort((a, b) => {
