@@ -599,7 +599,7 @@ function TestMode() {
                   <div className="progress-bar bg-success" role="progressbar" style={{ width: `${(answeredCount / questions.length) * 100}%` }}></div>
                 </div>
                 
-                <div className="d-flex flex-wrap gap-2 justify-content-center" style={{ maxHeight: '65vh', overflowY: 'auto', paddingRight: '5px' }}>
+                <div className="d-flex flex-wrap gap-2 justify-content-center" style={{ maxHeight: '55dvh', overflowY: 'auto', paddingRight: '5px', paddingBottom: '20px' }}>
                   {questions.map((q, idx) => {
                     const isAnswered = q.userAnswer.trim() !== '';
                     return (
