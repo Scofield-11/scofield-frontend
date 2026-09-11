@@ -11,6 +11,15 @@ body {
   /* Đã bỏ overscroll-behavior-y để khôi phục tính năng chạm đỉnh màn hình (Tap-to-top) của iOS */
 }
 
+/* --- NATIVE APP FEEL (Tối ưu cảm giác chạm) --- */
+a, button, .card, .flashcard-container, .nav-link-custom, .list-group-item {
+  -webkit-tap-highlight-color: transparent !important; /* Tắt viền xám khi chạm trên iOS/Android */
+}
+.btn, .nav-link-custom, .flashcard-container, .match-card {
+  user-select: none; /* Không cho bôi đen text khi bấm nhanh/giữ lâu */
+  -webkit-user-select: none;
+}
+
 
 :root {
   --bs-primary: #863bff;
@@ -241,6 +250,12 @@ body {
 .btn-outline-primary { color: #863bff !important; border-color: #863bff !important; }
 .btn-outline-primary:hover { background-color: #863bff !important; color: #ffffff !important; }
 
+/* --- MODAL NATIVE SCROLL --- */
+.modal {
+  overscroll-behavior: contain; /* Ngăn cuộn xuyên xuống nền (scroll chaining) */
+  -webkit-overflow-scrolling: touch;
+}
+
 /* --- ANIMATIONS --- */
 .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
 .fade-in-slide { animation: fadeInSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
@@ -262,6 +277,8 @@ body {
   position: relative; width: 100%; height: 100%;
   transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); border-radius: 24px;
+  will-change: transform; /* Ép render bằng GPU giúp lật mượt 60fps */
+  transform: translateZ(0); /* Kích hoạt hardware acceleration trên iOS cũ */
 }
 .flashcard-inner.flipped { transform: rotateY(180deg); }
 .flashcard-front, .flashcard-back {
