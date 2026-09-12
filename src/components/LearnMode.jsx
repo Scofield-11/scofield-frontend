@@ -8,7 +8,7 @@ import { playSound } from '../utils/audio'; // Import âm thanh
 import SetSelector from './SetSelector';
 import ContentTypeSelector from './ContentTypeSelector';
 
-const CHUNK_SIZE = 4;
+const CHUNK_SIZE = 7;
 
 function LearnMode() {
   const { sets, setSets, allVocabs, kanjiSets, setKanjiSets, loading, fetchSets, fetchAllVocabs, fetchKanjiSets } = useContext(VocabContext);
@@ -264,11 +264,7 @@ function LearnMode() {
       setCurrentWordIndex(currentWordIndex + 1);
       if (mode === 'choice') generateOptions(nextWord, allData);
     } else {
-      if (mode === 'choice') {
-        setMode('typing');
-        setCurrentWordIndex(0);
-        setCurrentRoundWords([...rounds[currentRoundIndex]]);
-      } else {
+      const goToNextRound = () => {
         if (currentRoundIndex < rounds.length - 1) {
           const nextRoundIdx = currentRoundIndex + 1;
           setCurrentRoundIndex(nextRoundIdx);
@@ -278,22 +274,51 @@ function LearnMode() {
           generateOptions(rounds[nextRoundIdx][0], allData);
         } else {
           setIsFinished(true);
-          playSound('win'); // Tiếng hoàn thành
+          playSound('win');
           confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 } });
           vibrate([100, 50, 100, 50, 200]); 
         }
+      };
+
+      if (mode === 'choice') {
+        const typingWords = rounds[currentRoundIndex];
+        if (typingWords.length > 0) {
+          setMode('typing');
+          setCurrentWordIndex(0);
+          setCurrentRoundWords([...typingWords]);
+        } else {
+          // Nếu tất cả từ đều bị sai ở phần trắc nghiệm -> bỏ qua vòng tự luận, đi thẳng sang Round mới
+          goToNextRound();
+        }
+      } else {
+        goToNextRound();
       }
     }
   };
 
   const handleWrongAnswer = (currentWord, correctAnswerText, userAnsText) => {
-    playSound('wrong'); // Tiếng buzzer sai
+    playSound('wrong'); 
     vibrate([200, 100, 200]); 
     setStreak(0);
     updateSRS(currentWord.id, false);
     setIsShaking(true);
     setTimeout(() => setIsShaking(false), 400);
-    setCurrentRoundWords(prev => [...prev, currentWord]); 
+    
+    // Cơ chế Quizlet: Đẩy câu sai sang Round kế tiếp
+    setRounds(prev => {
+      const newRounds = [...prev];
+      // Xóa từ này khỏi round hiện tại để vòng tự luận (typing) phía sau không hỏi lại
+      newRounds[currentRoundIndex] = newRounds[currentRoundIndex].filter(w => w.id !== currentWord.id);
+      
+      // Đẩy vào round kế tiếp (hoặc tạo round mới nếu đang ở round cuối cùng)
+      if (currentRoundIndex < newRounds.length - 1) {
+        newRounds[currentRoundIndex + 1] = [...newRounds[currentRoundIndex + 1], currentWord];
+      } else {
+        newRounds.push([currentWord]);
+      }
+      return newRounds;
+    });
+    
     setFeedback({ isCorrect: false, correctAnswer: correctAnswerText, yourAnswer: userAnsText });
     playAudio(correctAnswerText, 'error');
   };
