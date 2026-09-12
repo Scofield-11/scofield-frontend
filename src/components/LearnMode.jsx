@@ -39,6 +39,7 @@ function LearnMode() {
   const [maxStreak, setMaxStreak] = useState(0); 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
+  const srsAnsweredRefs = useRef(new Set());
 
   const vibrate = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
 
@@ -119,19 +120,21 @@ function LearnMode() {
 
   const updateSRS = async (vocabId, isCorrect) => {
     if (contentType === 'kanji') return; // Kanji chưa có SRS
+    if (srsAnsweredRefs.current.has(vocabId)) return;
+    srsAnsweredRefs.current.add(vocabId);
     try { await api.put(`/vocabularies/${vocabId}/srs`, { is_correct: isCorrect }); } 
     catch (err) { console.error("Lỗi cập nhật SRS:", err); }
   };
 
   const playAudio = (text, type = 'normal') => {
     if (!text) return;
-    const isVietnamese = text.split(" ").length > 0 && !/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text) && !/[a-zA-Z]/.test(text[0]);
-    if (isVietnamese) return; 
+    const hasJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text);
+    if (!hasJapanese) return;
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text) ? 'ja-JP' : 'en-US';
+      utterance.lang = 'ja-JP';
       utterance.rate = type === 'error' ? 0.8 : 0.9;
       window.speechSynthesis.speak(utterance);
     }
@@ -197,6 +200,7 @@ function LearnMode() {
     generateOptions(chunked[0][0], allData);
     setStreak(0);
     setMaxStreak(0);
+    srsAnsweredRefs.current.clear();
     setIsStarted(true);
     setIsFinished(false);
     if (!isFullscreen) toggleFullscreen();
@@ -215,7 +219,38 @@ function LearnMode() {
       return { ...v, score: score + Math.random() * 0.5 };
     });
     scoredAnswers.sort((a, b) => b.score - a.score);
-    const choices = [...scoredAnswers.slice(0, 3), currentWord].sort(() => 0.5 - Math.random());
+
+    const normalizeStr = (text) => text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").split(',').map(s => s.trim()).filter(Boolean).sort().join(',');
+    const correctAnswerStr = getAnswerText(currentWord);
+    const normalizedCorrect = normalizeStr(correctAnswerStr);
+    const usedAnswers = new Set([normalizedCorrect]);
+    
+    let wrongOptions = [];
+    for (let i = 0; i < scoredAnswers.length; i++) {
+      const rawAns = getAnswerText(scoredAnswers[i]);
+      const normAns = normalizeStr(rawAns);
+      if (!usedAnswers.has(normAns) && normAns !== "") {
+        wrongOptions.push(scoredAnswers[i]);
+        usedAnswers.add(normAns);
+      }
+      if (wrongOptions.length === 3) break;
+    }
+    
+    if (wrongOptions.length < 3) {
+       const backupVocabs = [...allData].sort(() => 0.5 - Math.random());
+       for (let i = 0; i < backupVocabs.length; i++) {
+          if (backupVocabs[i].id === currentWord.id) continue;
+          const rawAns = getAnswerText(backupVocabs[i]);
+          const normAns = normalizeStr(rawAns);
+          if (!usedAnswers.has(normAns) && normAns !== "") {
+            wrongOptions.push(backupVocabs[i]);
+            usedAnswers.add(normAns);
+          }
+          if (wrongOptions.length === 3) break;
+       }
+    }
+
+    const choices = [...wrongOptions, currentWord].sort(() => 0.5 - Math.random());
     setOptions(choices);
   };
 
@@ -287,6 +322,7 @@ function LearnMode() {
   const checkFuzzyMatch = (input, correctStr) => {
     if(!correctStr) return false;
     const clean = (str) => str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s{2,}/g," ").trim().toLowerCase();
+    if (clean(input) === clean(correctStr)) return true;
     return correctStr.split(',').map(s => clean(s)).includes(clean(input));
   };
 
@@ -397,7 +433,8 @@ function LearnMode() {
 
   const currentWord = currentRoundWords[currentWordIndex];
   const questionText = getQuestionText(currentWord);
-  const progressPercent = Math.round(((currentRoundIndex + (currentWordIndex/currentRoundWords.length)) / rounds.length) * 100);
+  const modeOffset = mode === 'choice' ? 0 : 0.5;
+  const progressPercent = Math.round(((currentRoundIndex + modeOffset + ((currentWordIndex / currentRoundWords.length) * 0.5)) / rounds.length) * 100);
 
   return (
     <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light mobile-fullscreen pt-4' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflowY: 'auto' } : {}}>

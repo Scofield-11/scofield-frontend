@@ -324,7 +324,7 @@ function TestMode() {
         if (q.type === 'choice') {
           isCorrect = clean(q.correctAnswer) === clean(q.userAnswer);
         } else {
-          isCorrect = q.correctAnswer.split(',').map(s => clean(s)).includes(clean(q.userAnswer));
+          isCorrect = clean(q.correctAnswer) === clean(q.userAnswer) || q.correctAnswer.split(',').map(s => clean(s)).includes(clean(q.userAnswer));
         }
         
         if (isCorrect) correctCount++;
