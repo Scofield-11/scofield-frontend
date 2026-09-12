@@ -459,7 +459,8 @@ function LearnMode() {
   const currentWord = currentRoundWords[currentWordIndex];
   const questionText = getQuestionText(currentWord);
   const modeOffset = mode === 'choice' ? 0 : 0.5;
-  const progressPercent = Math.round(((currentRoundIndex + modeOffset + ((currentWordIndex / currentRoundWords.length) * 0.5)) / rounds.length) * 100);
+  const wordProgress = currentRoundWords.length > 0 ? (currentWordIndex / currentRoundWords.length) * 0.5 : 0;
+  const progressPercent = Math.round(((currentRoundIndex + modeOffset + wordProgress) / rounds.length) * 100) || 0;
 
   return (
     <div className={`container-fluid py-4 transition-all ${isFullscreen ? 'bg-light mobile-fullscreen pt-4' : ''}`} ref={containerRef} style={isFullscreen ? { minHeight: '100vh', overflowY: 'auto' } : {}}>
