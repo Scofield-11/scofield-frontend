@@ -286,6 +286,48 @@ function VocabularyList() {
 
   const handleDragEnd = () => { setDraggedSetId(null); setDragOverSetId(null); };
 
+  const handleDownloadSet = async (e, set, format) => {
+    e.stopPropagation();
+    
+    // Kiểm tra xem đã tải chi tiết từ vựng chưa, nếu chưa thì gọi API lấy
+    let vocabsToExport = set.vocabularies;
+    if (!vocabsToExport) {
+      try {
+        const res = await api.get(`/sets/${set.id}`);
+        vocabsToExport = res.data.vocabularies;
+      } catch (error) {
+        toast.error("Lỗi tải dữ liệu để xuất file!");
+        return;
+      }
+    }
+
+    if (!vocabsToExport || vocabsToExport.length === 0) {
+      toast.warning("Học phần này chưa có từ vựng!");
+      return;
+    }
+
+    let content = "";
+    // Đặt tên file loại bỏ các ký tự đặc biệt không hợp lệ
+    let filename = `${set.title.replace(/[/\\?%*:|"<>]/g, '-')}.${format}`;
+
+    if (format === 'txt') {
+      content = vocabsToExport.map(v => `${v.word} | ${v.meaning}`).join('\n');
+    } else if (format === 'csv') {
+      // Dùng \uFEFF (BOM) để Excel nhận diện đúng tiếng Việt UTF-8
+      content = '\uFEFF' + "Từ vựng,Ý nghĩa\n" + vocabsToExport.map(v => `"${v.word.replace(/"/g, '""')}","${v.meaning.replace(/"/g, '""')}"`).join('\n');
+    }
+
+    const blob = new Blob([content], { type: format === 'csv' ? 'text/csv;charset=utf-8;' : 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <LoadingSkeleton />;
 
   return (
@@ -462,6 +504,8 @@ function VocabularyList() {
 
                   <div className={`d-flex align-items-center gap-2 ${viewMode === 'grid' ? 'w-100 justify-content-between mt-2' : ''}`}>
                     <div className="d-flex gap-2">
+                      <button className="btn btn-sm btn-light text-primary fw-bold border-0 px-2 py-2" onClick={(e) => handleDownloadSet(e, vocabSet, 'txt')} title="Tải file Text">⬇️ TXT</button>
+                      <button className="btn btn-sm btn-light text-success fw-bold border-0 px-2 py-2" onClick={(e) => handleDownloadSet(e, vocabSet, 'csv')} title="Tải file Excel">⬇️ Excel</button>
                       <button className="btn btn-sm btn-light text-danger fw-bold border-0 px-3 py-2" onClick={(e) => handleDeleteSet(e, vocabSet.id, vocabSet.title)}>🗑️ Xóa</button>
                     </div>
                     {viewMode === 'list' && (

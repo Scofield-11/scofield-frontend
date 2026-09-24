@@ -196,7 +196,7 @@ function LearnMode() {
     setMode('choice');
     setCurrentRoundWords([...chunked[0]]);
     
-    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
+    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis || []) : allVocabs;
     generateOptions(chunked[0][0], allData);
     setStreak(0);
     setMaxStreak(0);
@@ -257,7 +257,7 @@ function LearnMode() {
   const handleNextAfterFeedback = () => {
     setFeedback(null);
     setInputText('');
-    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis) : allVocabs;
+    const allData = contentType === 'kanji' ? kanjiSets.flatMap(s => s.kanjis || []) : allVocabs;
 
     if (currentWordIndex < currentRoundWords.length - 1) {
       const nextWord = currentRoundWords[currentWordIndex + 1];
