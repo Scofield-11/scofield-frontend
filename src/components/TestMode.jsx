@@ -609,8 +609,17 @@ function TestMode() {
           </div>
 
           {/* BẢNG ĐIỀU HƯỚNG BÊN PHẢI */}
-          <div className="col-lg-4 d-print-none">
-            <div className="card shadow-sm border-0 shadow-lg sticky-top" style={{ borderRadius: '24px', top: '20px', zIndex: 1000 }}>
+          <div className="col-lg-4 d-print-none position-relative">
+            <div 
+              className="card shadow-sm border-0 shadow-lg" 
+              style={{ 
+                borderRadius: '24px',
+                position: window.innerWidth >= 992 ? 'fixed' : 'relative',
+                top: window.innerWidth >= 992 ? '100px' : 'auto',
+                width: window.innerWidth >= 992 ? 'inherit' : '100%',
+                maxWidth: window.innerWidth >= 992 ? '350px' : 'none'
+              }}
+            >
               <div className="card-body p-4">
                 <h5 className="mb-3 text-center fw-bold text-dark">Bảng điều hướng</h5>
                 <p className="text-center text-muted small mb-3">Đã hoàn thành: <strong>{answeredCount} / {questions.length}</strong></p>
